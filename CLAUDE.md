@@ -2,31 +2,38 @@
 
 Derick's personal developer portfolio, aimed at engineering recruiters and hiring managers. It should show real engineering skill through the site itself: interactive, animated, and polished, while staying fast and accessible.
 
-## Status
+**This file points; it does not hold detail.** Keep it under 200 lines. Decisions, plans, and status go in the `docs/` files below, with a one-line pointer here.
 
-**Scaffolded on 2026-10-13.** Next.js 16.4 (App Router, Turbopack), React 19.3, TypeScript, Tailwind CSS 4, ESLint 9, and Prettier with `prettier-plugin-tailwindcss`. The home page is an empty shell; no section is built yet.
+## Where to look
 
-- **Not installed yet**: GSAP, Motion, React Three Fiber, drei, shadcn/ui. Add each one with the first section that uses it.
-- **Design**: the Figma file is https://www.figma.com/design/BNWVMI9cUxgIGxTH6xEMsB. Theme tokens in `src/app/globals.css` are still the starter defaults until `/sync-tokens` runs.
-- **Tailwind 4 has no `tailwind.config`**: theme tokens are CSS variables in the `@theme` block of `src/app/globals.css`.
-- **`AGENTS.md`** is written by `next dev`. It says this Next.js version differs from older ones: read the relevant guide in `node_modules/next/dist/docs/` before using a Next.js API.
-- `next.config.ts` enables `cacheComponents` and `partialPrefetching` (scaffold defaults).
+| Topic                                               | File                                    |
+| --------------------------------------------------- | --------------------------------------- |
+| Pages, sidebar, what is built and what is not       | `docs/site-structure.md`                |
+| Theme, tokens, background, Figma file and its state | `docs/design.md`                        |
+| 3D tech keyboard                                    | `docs/features/tech-keyboard.md`        |
+| Contact form                                        | `docs/features/contact-form.md`         |
+| Chatbot ("Ask anything")                            | `docs/features/ai-chatbot.md`           |
+| GitHub contributions section                        | `docs/features/github-contributions.md` |
+| Visitor counter                                     | `docs/features/visitor-counter.md`      |
+| Next.js version differences (written by `next dev`) | `AGENTS.md`                             |
+| Installed versions                                  | `package.json`                          |
+
+Read the matching file before planning or changing that area, and update it when a decision changes.
 
 ## Stack
 
-- **Framework**: Next.js (App Router) + TypeScript, npm as the package manager
-- **Styling**: Tailwind CSS is the primary layer. shadcn/ui is available for complex accessible components (dialog, tooltip, tabs); add one only when it is actually needed, and restyle it to the design.
-- **Animation**: GSAP + ScrollTrigger for scroll scenes, timelines, and animating 3D objects. Motion (`motion/react`) for UI enter/exit, layout, and hover transitions.
-- **3D**: React Three Fiber + drei
-- **Design source**: Figma. Design first, then build.
-
-Check `package.json` for the installed versions before relying on version-specific APIs.
+- **Framework**: Next.js 16 (App Router, Turbopack) + React 19 + TypeScript, npm as the package manager. `next.config.ts` enables `cacheComponents` and `partialPrefetching`. Read the relevant guide in `node_modules/next/dist/docs/` before using a Next.js API.
+- **Styling**: Tailwind CSS 4. There is no `tailwind.config`; tokens are in `src/app/globals.css`. shadcn/ui only when a complex accessible component is actually needed, restyled to the design.
+- **Animation**: Motion (`motion/react`) for UI enter/exit, layout, and hover. GSAP + ScrollTrigger for scroll scenes, timelines, and animating 3D objects.
+- **3D**: React Three Fiber + drei.
+- **Icons**: `lucide-react` for UI icons, `simple-icons` for brand logos.
+- **Not installed yet**: shadcn/ui. Add it with the first component that needs it.
 
 ## How to work with me
 
 1. **Plan first.** Before building a feature, section, or any non-trivial change, give me a short plan: what you will build, the components involved, how it animates, and any open questions. Wait for my approval before writing code. Small fixes and one-line changes do not need a plan.
-2. **Explain as we go.** I am learning parts of this stack, especially GSAP and 3D. When a choice is not obvious, explain why in a sentence or two: why this library, why a client component, why this pattern. Skip explanations of basics.
-3. **Design in Figma first.** Sections are designed in Figma before they are coded. If I ask for a section that has no design yet, say so and ask whether to design it first.
+2. **Explain as we go.** I am learning parts of this stack, especially GSAP and 3D. When a choice is not obvious, explain why in a sentence or two. Skip explanations of basics.
+3. **Design.** Figma is the intended design source, but it is currently out of date and the site is being built in code first (see `docs/design.md`). Ask before designing in Figma.
 
 ## Commands
 
@@ -44,12 +51,13 @@ npx tsc --noEmit # type-check
 src/
   app/                  # routes, root layout, globals.css (Tailwind theme tokens)
   components/
-    sections/           # one folder per page section (hero, about, projects, ...)
+    sections/           # one folder per page section (sidebar, home, ...)
     ui/                 # small reusable pieces, including any shadcn/ui components
     three/              # React Three Fiber scenes and meshes
-  content/              # typed content: projects, technologies, experience
+  content/              # typed content: one file per section
   lib/                  # helpers, GSAP plugin registration
 public/                 # images, models, fonts
+docs/                   # decisions and feature plans (see the table above)
 ```
 
 ## Conventions
@@ -57,7 +65,7 @@ public/                 # images, models, fonts
 **Components**
 
 - Server components by default. Add `"use client"` only to the part that needs state, effects, or animation, and keep that part small.
-- Content lives in typed files in `src/content/`, not inline in components. Adding a project or a technology should mean editing one data file.
+- Content lives in typed files in `src/content/`, not inline in components.
 
 **Styling**
 
@@ -66,7 +74,7 @@ public/                 # images, models, fonts
 
 **Animation**
 
-- GSAP runs inside `useGSAP` from `@gsap/react` with a `scope` ref so it cleans up on unmount. Register plugins once in `src/lib/`.
+- GSAP runs inside `useGSAP` from `@gsap/react` with a `scope` ref. Register plugins once in `src/lib/`.
 - One library per element: never drive the same property of the same element from both GSAP and Motion.
 - Animate `transform` and `opacity`, not layout properties.
 - Every animation needs a `prefers-reduced-motion` path that still shows all content.
@@ -79,49 +87,20 @@ public/                 # images, models, fonts
 
 **Accessibility and performance** are requirements, not polish: semantic HTML, visible focus styles, WCAG AA contrast, `next/image` and `next/font`, heavy libraries loaded only where they are used.
 
-## Planned feature: tech keyboard
-
-A 3D interactive numpad-style keyboard where each key is a technology I use. Clicking a key shows my experience with that technology.
-
-- **How the 3D model is built is undecided.** I am looking for an existing model first. The options are a `.glb` model wired up in R3F, keys built from geometry in code, or Spline. Ask before assuming one.
-- The technology list and experience text belong in `src/content/`, so the 3D scene and an accessible fallback list both read from the same data.
-
-## Planned feature: contact form
-
-A contact section with a form (name, email, message) that sends the message to my inbox. My email address is not shown on the page.
-
-- **Sending**: a server action or route handler calls an email service. Resend is the suggested service; confirm the choice with me when planning the section.
-- **Recipient address is undecided.** Read it from an environment variable (`CONTACT_TO_EMAIL`), never hardcode it.
-- **Secrets**: the email service API key lives in `.env.local` and in the host's environment settings, never in a `NEXT_PUBLIC_` variable. You cannot edit `.env*` files (a hook blocks it), so list the variables in `.env.example` and ask me to add the real values.
-- **Validation**: validate on the server (required fields, email format, length limits) even though the client validates too.
-- **Abuse protection**: a honeypot field plus rate limiting at minimum.
-- **UX**: labelled inputs, inline errors, and clear sending, success, and failure states. Failure must not lose what the visitor typed.
-- **Hosting**: the form needs a host that runs server code (such as Vercel), so do not configure a static export.
-
 ## Roles and scope
 
-- **Frontend development is the main Claude session's job**, guided by this file. The sub-agents below are narrow specialists and reviewers, not a replacement for it.
-- **The only backend is the contact form** (see below). Everything else is static. Any other server code (route handler, server action, third-party API key) needs a plan first that covers server-side validation, abuse protection, and where the secret lives.
-- **Security** is checked by `code-reviewer` on each change and by `/deploy-check` before shipping. For a deeper pass on pending changes, use the built-in `/security-review`.
+- **Frontend development is the main Claude session's job.** The sub-agents are narrow specialists and reviewers.
+- **Server code is limited to the contact form (`/api/contact`), the visitor counter (`/api/visitors`), and the cached GitHub fetch.** The chatbot runs in the browser. Everything else is static. Any server code needs a plan first that covers server-side validation, abuse protection, and where the secret lives. Do not configure a static export.
+- **Security** is checked by `code-reviewer` on each change and by `/deploy-check` before shipping. For a deeper pass, use `/security-review`.
 
 ## Automation in this repo
 
 **Hooks** (`.claude/settings.json`, scripts in `.claude/hooks/`):
 
-- After each edit, Prettier and ESLint `--fix` run on the file. Unfixable lint errors are reported back to you to fix.
+- After each edit, Prettier and ESLint `--fix` run on the file. Unfixable lint errors are reported back to fix.
 - Before a turn ends, `tsc --noEmit` runs. Type errors must be fixed before finishing.
-- Edits to `.env*` files and lockfiles are blocked, as are force pushes, `git reset --hard`, `git clean -f`, and recursive force deletes of anything other than build output. If one of these is really needed, ask me to do it.
-- A sound plays when you finish or need my input.
+- Edits to `.env*` files and lockfiles are blocked, as are force pushes, `git reset --hard`, `git clean -f`, and recursive force deletes of anything other than build output. If one is really needed, ask me to do it.
 
-**Sub-agents** (`.claude/agents/`):
+**Sub-agents** (`.claude/agents/`): `motion-3d` (GSAP, Motion, R3F), `figma-builder` (component from a Figma frame), `site-auditor` (read-only performance and accessibility audit), `code-reviewer` (read-only review before committing).
 
-- `motion-3d`: GSAP, Motion, and R3F work
-- `figma-builder`: builds a component from a Figma frame
-- `site-auditor`: read-only performance and accessibility audit
-- `code-reviewer`: read-only review before committing
-
-**Skills** (`.claude/skills/`):
-
-- `/new-section`: plan, then build a section or page
-- `/sync-tokens`: pull Figma variables into the Tailwind theme
-- `/deploy-check`: full pre-deploy check
+**Skills** (`.claude/skills/`): `/new-section` (plan, then build a section or page), `/sync-tokens` (pull Figma variables into the theme; see the warning in `docs/design.md`), `/deploy-check` (full pre-deploy check).

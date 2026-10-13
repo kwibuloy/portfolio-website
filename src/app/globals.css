@@ -1,26 +1,301 @@
 @import "tailwindcss";
 
+/* Theme and sound state live as attributes on <html>, set before first paint by
+   the inline script in layout.tsx. These variants let components style against
+   them without any React state. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant sound-on (&:where([data-sound="on"], [data-sound="on"] *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f6f6f6;
+  --raised: #ececec;
+  --border: #e2e2e2;
+  --border-strong: #c4c4c4;
+  --text: #111111;
+  --text-muted: #4d4d4d;
+  --text-subtle: #666666;
+  --accent: #111111;
+  --on-accent: #ffffff;
+  --contour: #cbcbcb;
+  --glow: #dedede;
+  --glow-deep: #8f8f8f;
+  --glitch-a: #ff0044;
+  --glitch-b: #00e1ff;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0c0c0c;
+  --surface: #141414;
+  --raised: #1c1c1c;
+  --border: #2a2a2a;
+  --border-strong: #3d3d3d;
+  --text: #f4f4f4;
+  --text-muted: #a8a8a8;
+  --text-subtle: #8a8a8a;
+  --accent: #f4f4f4;
+  --on-accent: #0c0c0c;
+  --contour: #2e2e2e;
+  --glow: #333333;
+  --glow-deep: #5a5a5a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-contour: var(--contour);
+  --color-glow: var(--glow);
+  --color-glow-deep: var(--glow-deep);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Layout sizes */
+  --spacing-sidebar: 18rem;
+  --spacing-topbar: 3.5rem;
+  --container-content: 88rem;
+
+  --animate-drift: drift 28s ease-in-out infinite alternate;
+  --animate-drift-slow: drift 44s ease-in-out infinite alternate-reverse;
+
+  @keyframes drift {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(6%, -8%, 0) scale(1.15);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+@utility text-gradient {
+  background-image: linear-gradient(
+    135deg,
+    var(--text) 30%,
+    var(--text-subtle) 100%
+  );
+  background-clip: text;
+  color: transparent;
+}
+
+@layer components {
+  /* Portrait glitch (see home/glitch-portrait.tsx). While hovered or pressed,
+     the photo jumps sideways in short bursts, and two tinted copies, each
+     clipped to a thin horizontal slice, slide the other way. steps(1) makes
+     every keyframe a hard cut instead of a smooth move. */
+  .glitch-ghost,
+  .glitch-lines {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .glitch-ghost {
+    background-size: cover;
+    background-position: center;
+    /* multiply keeps one colour channel of the photo; screen then adds that
+       channel on top of the photo underneath, which reads as a colour ghost. */
+    background-blend-mode: multiply;
+    mix-blend-mode: screen;
+  }
+  .glitch-ghost-a {
+    background-color: var(--glitch-a);
+  }
+  .glitch-ghost-b {
+    background-color: var(--glitch-b);
+  }
+  .glitch-lines {
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0 3px,
+      rgb(0 0 0 / 0.35) 3px 4px
+    );
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .glitch:hover .glitch-base,
+    .glitch:active .glitch-base {
+      animation: glitch-jump 1.6s steps(1) infinite;
+    }
+    .glitch:hover .glitch-ghost,
+    .glitch:active .glitch-ghost {
+      opacity: 1;
+      animation: glitch-slice 1.6s steps(1) infinite;
+    }
+    .glitch:hover .glitch-ghost-b,
+    .glitch:active .glitch-ghost-b {
+      animation-direction: reverse;
+    }
+    .glitch:hover .glitch-lines,
+    .glitch:active .glitch-lines {
+      animation: glitch-flash 1.6s steps(1) infinite;
+    }
+  }
+
+  @keyframes glitch-jump {
+    0% {
+      transform: translate3d(-6px, 0, 0) skewX(-2deg);
+    }
+    5% {
+      transform: translate3d(5px, 2px, 0);
+    }
+    10% {
+      transform: translate3d(-3px, -1px, 0) skewX(1deg);
+    }
+    15%,
+    100% {
+      transform: none;
+    }
+    60% {
+      transform: translate3d(4px, 0, 0);
+    }
+    63% {
+      transform: none;
+    }
+  }
+  @keyframes glitch-slice {
+    0% {
+      clip-path: inset(10% 0 72% 0);
+      transform: translate3d(14px, 0, 0);
+    }
+    5% {
+      clip-path: inset(48% 0 30% 0);
+      transform: translate3d(-12px, 0, 0);
+    }
+    10% {
+      clip-path: inset(74% 0 8% 0);
+      transform: translate3d(9px, 0, 0);
+    }
+    15%,
+    100% {
+      clip-path: inset(0 0 100% 0);
+      transform: none;
+    }
+    60% {
+      clip-path: inset(30% 0 55% 0);
+      transform: translate3d(-10px, 0, 0);
+    }
+    63% {
+      clip-path: inset(0 0 100% 0);
+    }
+  }
+  @keyframes glitch-flash {
+    0%,
+    10%,
+    60% {
+      opacity: 1;
+    }
+    5%,
+    15%,
+    63%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* A soft light that follows the pointer (see sidebar/spotlight.tsx, which
+     sets --spot-x and --spot-y). It sits behind the content and fades in
+     while the pointer is inside. */
+  .spotlight {
+    position: relative;
+    isolation: isolate;
+  }
+  .spotlight::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(
+      16rem circle at var(--spot-x, 50%) var(--spot-y, 0%),
+      color-mix(in srgb, var(--glow-deep) 35%, transparent),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .spotlight:hover::before {
+    opacity: 1;
+  }
+
+  /* Contour lines: the SVG is only a mask, so the line colour is the token. */
+  .contour-lines {
+    background-color: var(--contour);
+    mask-image: url("/contours.svg");
+    mask-size: 75rem;
+    mask-repeat: repeat;
+  }
+}
+
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Mobile navigation drawer: slides in from the left. @starting-style gives
+     the browser a "from" state so a plain CSS transition can animate a
+     <dialog> opening, and allow-discrete keeps it rendered while it closes. */
+  dialog.drawer {
+    transform: translateX(-100%);
+    transition:
+      transform 0.3s ease,
+      overlay 0.3s allow-discrete,
+      display 0.3s allow-discrete;
+  }
+  dialog.drawer[open] {
+    transform: translateX(0);
+  }
+  @starting-style {
+    dialog.drawer[open] {
+      transform: translateX(-100%);
+    }
+  }
+  dialog.drawer::backdrop {
+    background: rgb(0 0 0 / 0.4);
+  }
+
+  /* Chat and contact panels: rise and fade in when opened. */
+  dialog.panel {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.97);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease,
+      overlay 0.25s allow-discrete,
+      display 0.25s allow-discrete;
+  }
+  dialog.panel[open] {
+    opacity: 1;
+    transform: none;
+  }
+  @starting-style {
+    dialog.panel[open] {
+      opacity: 0;
+      transform: translateY(1.5rem) scale(0.97);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    dialog.drawer,
+    dialog.panel {
+      transition: none;
+    }
+  }
 }
