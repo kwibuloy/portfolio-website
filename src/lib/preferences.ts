@@ -61,49 +61,133 @@ export function playTick() {
   osc.stop(now + 0.08);
 }
 
-let noise: AudioBuffer | undefined;
+const KEY_SOUND = "/sounds/keyboard-typing.mp3";
 
-// A mechanical key press, also synthesised. A real switch makes two sounds at
-// once: a bright click (the switch) and a low "thock" (the keycap hitting the
-// case). The click is a burst of filtered noise and the thock is a falling
-// sine. Each press is pitched slightly differently so repeats do not sound
-// like one sample on a loop.
-export function playKeyPress() {
-  if (document.documentElement.dataset.sound !== "on") return;
-  audio ??= new AudioContext();
-  const now = audio.currentTime;
-  const pitch = 0.88 + Math.random() * 0.24;
+type Stroke = { start: number; length: number; gain: number };
 
-  if (!noise) {
-    const length = Math.floor(audio.sampleRate * 0.05);
-    noise = audio.createBuffer(1, length, audio.sampleRate);
-    const samples = noise.getChannelData(0);
-    for (let i = 0; i < length; i++) {
-      samples[i] = (Math.random() * 2 - 1) * (1 - i / length) ** 2;
+let recording: AudioBuffer | undefined;
+let strokes: Stroke[] = [];
+let nextStroke = 0;
+let loading: Promise<void> | undefined;
+
+// The recording is eight seconds of continuous typing. This finds where each
+// keystroke begins, so a single one can be played. It follows the loudness in
+// 2 ms steps and marks a keystroke wherever the level jumps well above the
+// 20 ms before it. Quiet strokes (mostly keys being released) and strokes cut
+// short by the next one are left out. It runs on the decoded audio, not on
+// times written down by hand, because browsers do not all decode an MP3 with
+// the same few milliseconds of silence at the front.
+function findStrokes(buffer: AudioBuffer): Stroke[] {
+  const rate = buffer.sampleRate;
+  const left = buffer.getChannelData(0);
+  const right = buffer.getChannelData(buffer.numberOfChannels > 1 ? 1 : 0);
+  const hop = Math.round(rate * 0.002);
+  const frames = Math.floor(buffer.length / hop);
+
+  const level = new Float32Array(frames);
+  let loudest = 0;
+  for (let frame = 0; frame < frames; frame++) {
+    let energy = 0;
+    for (let i = frame * hop; i < (frame + 1) * hop; i++) {
+      energy += ((left[i] + right[i]) / 2) ** 2;
     }
+    level[frame] = Math.sqrt(energy / hop);
+    loudest = Math.max(loudest, level[frame]);
   }
 
-  const click = audio.createBufferSource();
-  click.buffer = noise;
-  click.playbackRate.value = pitch;
-  const band = audio.createBiquadFilter();
-  band.type = "bandpass";
-  band.frequency.value = 3000 * pitch;
-  band.Q.value = 1.1;
-  const clickGain = audio.createGain();
-  clickGain.gain.setValueAtTime(0.3, now);
-  clickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
-  click.connect(band).connect(clickGain).connect(audio.destination);
-  click.start(now);
+  const onsets: number[] = [];
+  for (let frame = 10; frame < frames; frame++) {
+    let before = 0;
+    for (let k = frame - 10; k < frame; k++) before += level[k] / 10;
+    const jumped =
+      level[frame] > 0.08 * loudest &&
+      level[frame] > 2.5 * before + 0.01 * loudest;
+    // More than 60 ms apart, so one keystroke is not counted twice.
+    if (jumped && frame - (onsets.at(-1) ?? -31) > 30) onsets.push(frame);
+  }
 
-  const thock = audio.createOscillator();
-  const thockGain = audio.createGain();
-  thock.type = "sine";
-  thock.frequency.setValueAtTime(190 * pitch, now);
-  thock.frequency.exponentialRampToValueAtTime(85 * pitch, now + 0.07);
-  thockGain.gain.setValueAtTime(0.22, now);
-  thockGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-  thock.connect(thockGain).connect(audio.destination);
-  thock.start(now);
-  thock.stop(now + 0.09);
+  const found: Stroke[] = [];
+  onsets.forEach((onset, index) => {
+    const end = onsets[index + 1] ?? frames;
+    let framePeak = 0;
+    for (let k = onset; k < end; k++) framePeak = Math.max(framePeak, level[k]);
+    let peak = 0;
+    for (let i = onset * hop; i < end * hop; i++) {
+      peak = Math.max(peak, Math.abs(left[i] + right[i]) / 2);
+    }
+    const gap = ((end - onset) * hop) / rate;
+    if (framePeak < 0.3 * loudest || gap < 0.085) return;
+
+    // The exact sample where the click starts, to within a millisecond.
+    let attack = Math.max(0, onset * hop - Math.round(rate * 0.006));
+    while (
+      attack < (onset + 2) * hop &&
+      Math.abs(left[attack] + right[attack]) / 2 < 0.15 * peak
+    ) {
+      attack++;
+    }
+    const start = attack / rate;
+    found.push({
+      start,
+      length: Math.min((end * hop) / rate - start, 0.3),
+      // Every stroke plays at the same loudness, whatever it was recorded at.
+      gain: 0.4 / peak,
+    });
+  });
+  return found;
+}
+
+// Fetches and decodes the recording once. It is only downloaded for visitors
+// who have sound turned on, and only where the keyboard is on the page.
+export function loadKeyPress() {
+  if (document.documentElement.dataset.sound !== "on") return;
+  audio ??= new AudioContext();
+  const context = audio;
+  loading ??= fetch(KEY_SOUND)
+    .then((response) => {
+      if (!response.ok) throw new Error(`key sound: ${response.status}`);
+      return response.arrayBuffer();
+    })
+    .then((data) => context.decodeAudioData(data))
+    .then((buffer) => {
+      strokes = findStrokes(buffer);
+      recording = buffer;
+    })
+    .catch(() => {
+      // No recording, no key sound; the keyboard works the same without it.
+    });
+}
+
+// One keystroke from the recording, taken in the order they were typed so
+// repeats do not sound like one sample on a loop. `delay` (seconds) is how
+// long the 3D key takes to reach the bottom of its travel: the click is
+// scheduled on the audio clock to land at that moment, not when the pointer
+// arrives.
+export function playKeyPress(delay = 0) {
+  if (document.documentElement.dataset.sound !== "on") return;
+  loadKeyPress();
+  if (!audio || !recording || strokes.length === 0) return;
+  // A browser keeps audio suspended until the visitor has clicked or pressed
+  // a key on the page. Sounds started before then would all play at once
+  // later, so skip them.
+  if (audio.state !== "running") {
+    void audio.resume();
+    return;
+  }
+
+  const stroke = strokes[nextStroke];
+  nextStroke = (nextStroke + 1) % strokes.length;
+  const lead = 0.002; // start just before the click, faded in, to avoid a pop
+  const at = audio.currentTime + Math.max(0, delay - lead);
+
+  const source = audio.createBufferSource();
+  source.buffer = recording;
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(0, at);
+  gain.gain.linearRampToValueAtTime(stroke.gain, at + lead);
+  // Fade out before the next keystroke in the recording begins.
+  gain.gain.setValueAtTime(stroke.gain, at + lead + stroke.length - 0.015);
+  gain.gain.linearRampToValueAtTime(0, at + lead + stroke.length);
+  source.connect(gain).connect(audio.destination);
+  source.start(at, Math.max(0, stroke.start - lead), stroke.length + lead);
 }

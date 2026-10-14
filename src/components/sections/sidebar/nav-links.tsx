@@ -53,6 +53,7 @@ export function NavLinks({ id }: { id: string }) {
           >
             <Link
               href={href}
+              data-tour={`nav-${href.slice(1)}`}
               aria-current={active ? "page" : undefined}
               onPointerEnter={() => setHovered(href)}
               onFocus={() => setHovered(href)}

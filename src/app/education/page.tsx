@@ -141,27 +141,27 @@ export default async function EducationPage() {
         </ul>
       </section>
 
-      {/* Bottom band: student organisations. */}
+      {/* Bottom band: student organizations. */}
       <section
-        aria-labelledby="organisations-heading"
+        aria-labelledby="organizations-heading"
         className="flex flex-col gap-6"
       >
         <Reveal>
           <h2
-            id="organisations-heading"
+            id="organizations-heading"
             className="text-3xl font-semibold tracking-tight sm:text-4xl"
           >
-            Organisations
+            Organizations
           </h2>
         </Reveal>
         <ul className="grid gap-4 lg:grid-cols-2">
-          {degree.organisations.map((organisation, index) => (
-            <li key={organisation.name}>
+          {degree.organizations.map((organization, index) => (
+            <li key={organization.name}>
               <Reveal delay={index * 0.1} className="h-full">
                 <div className="border-border bg-surface/70 flex h-full flex-col gap-4 rounded-2xl border p-8 backdrop-blur-sm">
-                  <p className={labelClass}>{organisation.period}</p>
-                  <h3 className="text-2xl font-medium">{organisation.name}</h3>
-                  <p className="text-text-muted mt-auto">{organisation.role}</p>
+                  <p className={labelClass}>{organization.period}</p>
+                  <h3 className="text-2xl font-medium">{organization.name}</h3>
+                  <p className="text-text-muted mt-auto">{organization.role}</p>
                 </div>
               </Reveal>
             </li>

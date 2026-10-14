@@ -17,27 +17,24 @@ export const site = {
   portrait: "/portrait.jpg",
   /** The resume offered for download in the hero, in /public. */
   resume: "/Derick-Mercado-Resume.pdf",
-  role: "Developer",
+  role: "Fullstack Software Developer and AI/ML Engineer",
   /** GitHub username, used for the profile link and the contribution graph. */
   github: "kwibuloy",
-  // Placeholder copy: replace with the real introduction.
-  intro: [
-    "I'm a developer who builds interactive, animated, and accessible web experiences.",
-    "Placeholder introduction. A couple of sentences about what I'm working on now and the kind of work I enjoy will go here.",
-  ],
+  /** The hero introduction. The name and role are shown above it, so it does not repeat them. */
+  intro:
+    "I build full-stack web apps with AI and machine learning inside them, from the database and API to an interface that feels fast and polished. I can take a product from idea to deployment, add machine learning to one you already have, or turn raw data into analysis you can act on. I'm a third-year Computer Science student at De La Salle University - Dasmariñas, specializing in Intelligent Systems.",
 };
 
-// GitHub and LinkedIn are real. The other three are placeholder URLs:
-// replace each with the real profile link.
 export const socials: SocialLink[] = [
   { label: "GitHub", href: `https://github.com/${site.github}` },
   {
     label: "LinkedIn",
-    href: "https://www.linkedin.com/in/derick-mercado-313086410",
+    href: "https://www.linkedin.com/in/derick-conrad-mercado-313086410",
   },
-  { label: "Discord", href: "https://discord.com/" },
-  { label: "Messenger", href: "https://www.messenger.com/" },
-  { label: "Instagram", href: "https://www.instagram.com/" },
+  { label: "Discord", href: "https://discord.com/users/513586414529544196" },
+  // m.me opens a Messenger chat directly instead of the Facebook profile.
+  { label: "Messenger", href: "https://m.me/derickcmercado14" },
+  { label: "Instagram", href: "https://www.instagram.com/dzderick" },
 ];
 
 export const nav: NavItem[] = [

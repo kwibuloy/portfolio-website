@@ -6,7 +6,22 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 @custom-variant sound-on (&:where([data-sound="on"], [data-sound="on"] *));
 
-:root {
+/* hover: also matches the element the guided tour is pointing at
+   (ui/tour/guided-tour.tsx), so its hover animations play as if the mouse
+   were on it. group-hover: follows, as it is built from this variant. */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover {
+      @slot;
+    }
+  }
+  &[data-tour-active] {
+    @slot;
+  }
+}
+
+:root,
+[data-theme="light"] {
   color-scheme: light;
   --bg: #ffffff;
   --surface: #f6f6f6;
@@ -18,11 +33,12 @@
   --text-subtle: #666666;
   --accent: #111111;
   --on-accent: #ffffff;
-  --contour: #cbcbcb;
+  /* One translucent grey for both themes: over --bg it reads as #cbcbcb in
+     light and #363636 in dark (1.62:1 either way). The lines never change
+     colour, so a theme switch only moves the background under them. */
+  --contour: rgb(121 121 121 / 0.387);
   --glow: #dedede;
   --glow-deep: #8f8f8f;
-  --glitch-a: #ff0044;
-  --glitch-b: #00e1ff;
 }
 
 [data-theme="dark"] {
@@ -37,9 +53,8 @@
   --text-subtle: #8a8a8a;
   --accent: #f4f4f4;
   --on-accent: #0c0c0c;
-  --contour: #2e2e2e;
-  --glow: #333333;
-  --glow-deep: #5a5a5a;
+  --glow: #2d2d2d;
+  --glow-deep: #6f6f6f;
 }
 
 @theme inline {
@@ -89,118 +104,25 @@
 }
 
 @layer components {
-  /* Portrait glitch (see home/glitch-portrait.tsx). While hovered or pressed,
-     the photo jumps sideways in short bursts, and two tinted copies, each
-     clipped to a thin horizontal slice, slide the other way. steps(1) makes
-     every keyframe a hard cut instead of a smooth move. */
-  .glitch-ghost,
-  .glitch-lines {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    pointer-events: none;
-  }
-  .glitch-ghost {
-    background-size: cover;
-    background-position: center;
-    /* multiply keeps one colour channel of the photo; screen then adds that
-       channel on top of the photo underneath, which reads as a colour ghost. */
-    background-blend-mode: multiply;
-    mix-blend-mode: screen;
-  }
-  .glitch-ghost-a {
-    background-color: var(--glitch-a);
-  }
-  .glitch-ghost-b {
-    background-color: var(--glitch-b);
-  }
-  .glitch-lines {
-    background: repeating-linear-gradient(
-      to bottom,
-      transparent 0 3px,
-      rgb(0 0 0 / 0.35) 3px 4px
+  /* A square of dots, one of the loose layers behind the portrait (see
+     home/floating-portrait.tsx). */
+  .dot-grid {
+    background-image: radial-gradient(
+      var(--border-strong) 0.09rem,
+      transparent 0.1rem
     );
+    background-size: 0.875rem 0.875rem;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .glitch:hover .glitch-base,
-    .glitch:active .glitch-base {
-      animation: glitch-jump 1.6s steps(1) infinite;
-    }
-    .glitch:hover .glitch-ghost,
-    .glitch:active .glitch-ghost {
-      opacity: 1;
-      animation: glitch-slice 1.6s steps(1) infinite;
-    }
-    .glitch:hover .glitch-ghost-b,
-    .glitch:active .glitch-ghost-b {
-      animation-direction: reverse;
-    }
-    .glitch:hover .glitch-lines,
-    .glitch:active .glitch-lines {
-      animation: glitch-flash 1.6s steps(1) infinite;
-    }
-  }
-
-  @keyframes glitch-jump {
-    0% {
-      transform: translate3d(-6px, 0, 0) skewX(-2deg);
-    }
-    5% {
-      transform: translate3d(5px, 2px, 0);
-    }
-    10% {
-      transform: translate3d(-3px, -1px, 0) skewX(1deg);
-    }
-    15%,
-    100% {
-      transform: none;
-    }
-    60% {
-      transform: translate3d(4px, 0, 0);
-    }
-    63% {
-      transform: none;
-    }
-  }
-  @keyframes glitch-slice {
-    0% {
-      clip-path: inset(10% 0 72% 0);
-      transform: translate3d(14px, 0, 0);
-    }
-    5% {
-      clip-path: inset(48% 0 30% 0);
-      transform: translate3d(-12px, 0, 0);
-    }
-    10% {
-      clip-path: inset(74% 0 8% 0);
-      transform: translate3d(9px, 0, 0);
-    }
-    15%,
-    100% {
-      clip-path: inset(0 0 100% 0);
-      transform: none;
-    }
-    60% {
-      clip-path: inset(30% 0 55% 0);
-      transform: translate3d(-10px, 0, 0);
-    }
-    63% {
-      clip-path: inset(0 0 100% 0);
-    }
-  }
-  @keyframes glitch-flash {
-    0%,
-    10%,
-    60% {
-      opacity: 1;
-    }
-    5%,
-    15%,
-    63%,
-    100% {
-      opacity: 0;
-    }
+  /* The torn, zig-zag bottom edge of the order ticket's receipt (see
+     services/service-ticket.tsx). The mask cuts small triangles out of the
+     last half rem of the element. */
+  .receipt-edge {
+    --tooth: 0.5rem;
+    mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth)) no-repeat,
+      conic-gradient(from -45deg at bottom, #000 90deg, transparent 0) bottom /
+        calc(var(--tooth) * 2) var(--tooth) repeat-x;
   }
 
   /* A soft light that follows the pointer (see sidebar/spotlight.tsx, which
@@ -290,6 +212,15 @@
       opacity: 0;
       transform: translateY(1.5rem) scale(0.97);
     }
+  }
+
+  /* Theme switch (src/lib/theme-transition.ts): the new page is revealed
+     by a circular clip animated from script, so the browser's default
+     cross-fade is turned off and the old page stays put underneath. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
   }
 
   @media (prefers-reduced-motion: reduce) {

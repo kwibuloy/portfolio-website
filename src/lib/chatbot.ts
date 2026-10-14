@@ -2,6 +2,7 @@ import { certifications } from "@/content/certifications";
 import { education } from "@/content/education";
 import { experience } from "@/content/experience";
 import { projects } from "@/content/projects";
+import { faq, replyTime, services } from "@/content/services";
 import { site } from "@/content/site";
 import { stack, technologies, tools } from "@/content/technologies";
 
@@ -134,7 +135,7 @@ const general: Topic[] = [
     weight: 2,
     reply: {
       text: bullets(
-        degree.organisations.map(
+        degree.organizations.map(
           (item) => `${item.name}: ${item.role} (${item.period})`,
         ),
       ),
@@ -245,9 +246,33 @@ const general: Topic[] = [
         { label: "GitHub", href: `https://github.com/${site.github}` },
         {
           label: "LinkedIn",
-          href: "https://www.linkedin.com/in/derick-mercado-313086410",
+          href: "https://www.linkedin.com/in/derick-conrad-mercado-313086410",
         },
       ],
+    },
+  },
+  {
+    keywords: [
+      "service",
+      "services",
+      "freelance",
+      "offer",
+      "price",
+      "pricing",
+      "rate",
+      "cost",
+      "available",
+      "availability",
+      "timezone",
+    ],
+    weight: 2.5,
+    reply: {
+      text: `He takes on freelance and remote work:
+
+${bullets(services.map((service) => `${service.title}: ${service.summary}`))}
+
+He can give a project ${faq[0].answer.toLowerCase()} He replies in ${replyTime.replace("<", "under")}, and quotes either a fixed price or an hourly rate after a short call.`,
+      links: [{ label: "Services page", href: "/services" }],
     },
   },
   {

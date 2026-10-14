@@ -3,7 +3,8 @@
 A 3D interactive numpad-style keyboard where each key is a technology Derick uses.
 
 - **Home page**: hovering a key (tapping on touch) shows a small card beside the pointer with a short summary. Nothing else sits under the keyboard.
-- **Sound**: landing on a key plays a synthesised mechanical key press (`playKeyPress` in `src/lib/preferences.ts`: a noise click plus a low thock, pitched slightly differently each time). It only plays when the visitor has turned the sound toggle on.
+- **Sound** (changed 2026-10-13): landing on a key plays one keystroke from a recording of mechanical typing, `public/sounds/keyboard-typing.mp3` ("Mechanical Keyboard Typing HD" by VirtualZero, Pixabay Content License, no attribution required). `findStrokes` in `src/lib/preferences.ts` finds where each keystroke starts in the decoded audio (30 usable ones), and `playKeyPress` plays them in recorded order, each at the same loudness. It only plays when the visitor has turned the sound toggle on, and the file is only downloaded then.
+- **Sound and press in step**: the key goes down in `PRESS_TRAVEL` (0.07 s, in `tech-keyboard.tsx`) and the click is scheduled on the audio clock to land when the key reaches the bottom. With reduced motion the key moves instantly and so does the sound. Changing the press speed means changing that one constant.
 - **`/tech-stack`**: the page is only the keyboard. Hovering shows the same card; clicking a key opens a popup (`tech-dialog.tsx`, a native `<dialog>` animated with Motion) in the key's brand colour with the detailed experience.
 
 ## Model

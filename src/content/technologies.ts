@@ -23,9 +23,7 @@ export type Technology = {
   details: string[];
 };
 
-// Written from the projects and experience in this folder. Google Colab and
-// Antigravity are still placeholders: nothing in the projects shows how they
-// were used.
+// Written from the projects and experience in this folder.
 export const technologies: Technology[] = [
   {
     id: "javascript",
@@ -91,7 +89,7 @@ export const technologies: Technology[] = [
       "Layout, theming, and animation in plain CSS when a library is not needed.",
     details: [
       "Styled MediQueue and LogiBot in hand-written CSS.",
-      "Wrote this portfolio's light and dark themes as CSS variables, and effects such as the portrait glitch and the sidebar spotlight as pure CSS.",
+      "Wrote this portfolio's light and dark themes as CSS variables, and effects such as the sidebar spotlight as pure CSS.",
     ],
   },
   {
@@ -360,8 +358,10 @@ export const technologies: Technology[] = [
     keyLabel: "Co",
     group: "tool",
     category: "Tool",
-    summary: "Placeholder: what I use Google Colab for.",
-    details: ["Placeholder: a notebook or course where I used it."],
+    summary: "Where I write notebooks for data analysis.",
+    details: [
+      "Built my data analytics notebooks at Eskwelabs in Colab, including the SD-185 subscription churn analysis.",
+    ],
   },
   {
     id: "blender",
@@ -391,8 +391,10 @@ export const technologies: Technology[] = [
     keyLabel: "AG",
     group: "tool",
     category: "Tool",
-    summary: "Placeholder: what I use Antigravity for.",
-    details: ["Placeholder: a project where I used it."],
+    summary: "An AI-assisted editor, used the same way as Cursor.",
+    details: [
+      "Used alongside Cursor as an AI-assisted editor for writing and refactoring code.",
+    ],
   },
 ];
 

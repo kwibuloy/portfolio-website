@@ -82,6 +82,8 @@ type SceneProps = {
   hoveredId: string | null;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
+  /** Seconds a key takes to reach the bottom of its press. */
+  pressTravel: number;
   reducedMotion: boolean;
   /** Changing this number puts the camera back where it started. */
   resetSignal: number;
@@ -98,6 +100,7 @@ function Keyboard({
   hoveredId,
   onHover,
   onSelect,
+  pressTravel,
   reducedMotion,
 }: Omit<SceneProps, "stage" | "resetSignal">) {
   const { scene } = useGLTF(MODEL);
@@ -158,20 +161,24 @@ function Keyboard({
     });
   }, [reducedMotion]);
 
-  // Press: the hovered key dips, the selected key sits lower.
+  // Press: the hovered key dips, the selected key sits lower. Going down is
+  // quick and accelerates ("power2.in"), so the key visibly hits the bottom
+  // at pressTravel, which is when the key sound is timed to click. Coming
+  // back up is slower and eases out, like a spring returning.
   useGSAP(() => {
     keys.forEach(({ mesh, rest }, id) => {
       const depth =
         id === activeId ? SELECT_DEPTH : id === hoveredId ? HOVER_DEPTH : 0;
+      const pressing = depth > 0;
       gsap.to(mesh.position, {
         y: rest - depth,
-        duration: reducedMotion ? 0 : 0.25,
-        ease: "power2.out",
+        duration: reducedMotion ? 0 : pressing ? pressTravel : 0.25,
+        ease: pressing ? "power2.in" : "power2.out",
         overwrite: true,
         onUpdate: redraw,
       });
     });
-  }, [activeId, hoveredId, keys, reducedMotion]);
+  }, [activeId, hoveredId, keys, pressTravel, reducedMotion]);
 
   const onPointerOver = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();

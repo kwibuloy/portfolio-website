@@ -1,22 +1,20 @@
 import { ArrowUpRight, Download } from "lucide-react";
 import Link from "next/link";
-import { GlitchPortrait } from "@/components/sections/home/glitch-portrait";
+import { FloatingPortrait } from "@/components/sections/home/floating-portrait";
 import { Reveal } from "@/components/ui/reveal";
 import { ScrambleText } from "@/components/ui/scramble-text";
-import { certifications } from "@/content/certifications";
 import { projects } from "@/content/projects";
 import { site, socials } from "@/content/site";
-import { stack, tools } from "@/content/technologies";
 
-// Counted from the content files, so they stay true as content is added.
+// Projects is counted from the content file, so it stays true as projects are
+// added.
 const stats = [
-  { label: "Technologies", value: stack.length, href: "/tech-stack" },
-  { label: "Tools", value: tools.length, href: "/tech-stack" },
-  { label: "Projects", value: projects.length, href: "/projects" },
+  { value: "4.00", label: "GPA", href: "/education" },
+  { value: "2×", label: "Top 1 Overall Academic Scholar", href: "/education" },
   {
-    label: "Certifications",
-    value: certifications.length,
-    href: "/certifications",
+    value: String(projects.length),
+    label: "Projects shipped",
+    href: "/projects",
   },
 ];
 
@@ -25,9 +23,10 @@ export function Hero() {
     <section className="flex flex-col gap-12">
       <div className="grid items-center gap-8 md:grid-cols-5 md:gap-16">
         <Reveal className="md:col-span-2">
-          <GlitchPortrait
+          <FloatingPortrait
             src={site.portrait}
             alt={`Portrait of ${site.name}`}
+            handle={site.github}
           />
         </Reveal>
 
@@ -50,12 +49,8 @@ export function Hero() {
               <span className="opacity-60">PDF</span>
             </a>
           </Reveal>
-          <Reveal delay={0.2} className="flex flex-col gap-4">
-            {site.intro.map((paragraph) => (
-              <p key={paragraph} className="text-text-muted text-lg xl:text-xl">
-                {paragraph}
-              </p>
-            ))}
+          <Reveal delay={0.2}>
+            <p className="text-text-muted text-lg xl:text-xl">{site.intro}</p>
           </Reveal>
           <Reveal delay={0.3}>
             <ul className="flex flex-wrap gap-x-5 gap-y-2">
@@ -63,6 +58,7 @@ export function Hero() {
                 <li key={label}>
                   <a
                     href={href}
+                    data-tour={`social-${label.toLowerCase()}`}
                     target="_blank"
                     rel="noreferrer"
                     className="group text-text-muted hover:text-text inline-flex items-center gap-1 font-mono text-sm transition-colors"
@@ -81,7 +77,7 @@ export function Hero() {
       </div>
 
       <Reveal delay={0.4}>
-        <ul className="border-border divide-border grid grid-cols-2 border-y md:grid-cols-4 md:divide-x">
+        <ul className="border-border divide-border grid border-y sm:grid-cols-3 sm:divide-x">
           {stats.map((stat) => (
             <li key={stat.label}>
               <Link

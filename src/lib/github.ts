@@ -57,8 +57,9 @@ type Response = {
 /**
  * The last 12 months of contributions, as shown on the GitHub profile.
  *
- * "use cache" stores the result on the server, so GitHub is asked about once
- * a day instead of on every visit, and the token never reaches the browser.
+ * "use cache" stores the result on the server, so GitHub is asked at most
+ * every ten minutes instead of on every visit, and the token never reaches
+ * the browser.
  * Returns null when the token is missing or GitHub cannot be reached; that
  * result is kept only for a few minutes so the next attempt comes soon.
  */
@@ -74,7 +75,10 @@ export async function getContributions(
     return null;
   }
 
-  cacheLife("days");
+  // Ten minutes, so a new commit shows up soon after GitHub counts it. A
+  // visit after that is served the stored graph and refreshes it in the
+  // background; the long expiry keeps the graph in the prerendered page.
+  cacheLife({ revalidate: 600, expire: 86400 });
   return {
     total: calendar.totalContributions,
     weeks: calendar.weeks.map((week) =>

@@ -1,29 +1,82 @@
 "use client";
 
 import { Moon, Sun, Volume2, VolumeX } from "lucide-react";
-import { toggleSound, toggleTheme } from "@/lib/preferences";
+import { useSyncExternalStore } from "react";
+import { toggleSound } from "@/lib/preferences";
+import { switchTheme } from "@/lib/theme-transition";
 
-const buttonClass =
-  "text-text-muted hover:bg-raised hover:text-text flex size-9 items-center justify-center rounded-full transition-colors";
+const segmentClass =
+  "relative flex size-8 items-center justify-center rounded-full transition-colors";
+const iconMotion =
+  "size-4 transition-transform duration-500 ease-out motion-reduce:transition-none";
 
-// The icons switch with CSS variants that read data-theme / data-sound on
-// <html>, so the buttons need no React state and cannot mismatch on hydration.
+// The theme lives on <html data-theme>, set before React hydrates. Reading it
+// through useSyncExternalStore keeps aria-pressed in step with it without a
+// hydration mismatch: the server renders no pressed state, and the client
+// fills it in right after hydrating.
+function subscribe(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
+  return () => observer.disconnect();
+}
+const readTheme = () => document.documentElement.dataset.theme;
+const serverTheme = () => undefined;
+
+/**
+ * Light and dark as two joined buttons with a pill that slides to the one in
+ * use, and the sound toggle beside them. The visuals (pill position, icon
+ * spin, colours) follow data-theme / data-sound through the dark: and
+ * sound-on: variants, so they are right from the first paint.
+ */
 export function PreferenceToggles() {
+  const theme = useSyncExternalStore(subscribe, readTheme, serverTheme);
+
   return (
-    <div className="border-border flex shrink-0 items-center rounded-full border">
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className={buttonClass}
-        aria-label="Switch between light and dark theme"
+    <div className="flex shrink-0 items-center gap-1.5">
+      <div
+        role="group"
+        aria-label="Theme"
+        className="border-border relative flex items-center rounded-full border p-0.5"
       >
-        <Sun aria-hidden className="size-4 dark:hidden" />
-        <Moon aria-hidden className="hidden size-4 dark:block" />
-      </button>
+        {/* The pill: under Sun in light, slid under Moon in dark. */}
+        <span
+          aria-hidden
+          className="bg-raised absolute top-0.5 left-0.5 size-8 rounded-full shadow-sm transition-transform duration-300 ease-out motion-reduce:transition-none dark:translate-x-full"
+        />
+        <button
+          type="button"
+          aria-label="Light theme"
+          aria-pressed={theme === undefined ? undefined : theme === "light"}
+          onClick={(event) => switchTheme(event.currentTarget, "light")}
+          className={`${segmentClass} text-text dark:text-text-muted dark:hover:text-text`}
+        >
+          {/* Spins and shrinks away when it is not the one in use. */}
+          <Sun
+            aria-hidden
+            className={`${iconMotion} dark:scale-75 dark:-rotate-90`}
+          />
+        </button>
+        <button
+          type="button"
+          aria-label="Dark theme"
+          aria-pressed={theme === undefined ? undefined : theme === "dark"}
+          onClick={(event) => switchTheme(event.currentTarget, "dark")}
+          className={`${segmentClass} text-text-muted hover:text-text dark:text-text`}
+        >
+          <Moon
+            aria-hidden
+            className={`${iconMotion} scale-75 rotate-90 dark:scale-100 dark:rotate-0`}
+          />
+        </button>
+      </div>
+
       <button
         type="button"
         onClick={toggleSound}
-        className={buttonClass}
+        className="border-border text-text-muted hover:bg-raised hover:text-text flex size-9 items-center justify-center rounded-full border transition-colors"
         aria-label="Turn interface sounds on or off"
       >
         <VolumeX aria-hidden className="sound-on:hidden size-4" />

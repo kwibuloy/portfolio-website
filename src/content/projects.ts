@@ -45,7 +45,8 @@ export const projects: Project[] = [
       "Docker",
       "Kubernetes",
     ],
-    links: [{ label: "GitHub", href: "https://github.com/kwibuloy/MediQueue" }],
+    // The repository is private, so it is not linked.
+    links: [],
   },
   {
     slug: "sd-185",
@@ -77,7 +78,7 @@ export const projects: Project[] = [
       "A decision-support prototype that ranks public works contracts by how unusual they look, for a human to review.",
     description:
       "ProcureGuard scores civil-works procurement records and surfaces the ones worth a closer look. It computes three red-flag features per contract, runs an Isolation Forest over them, and shows the ranked results in a React dashboard with an explanation for each score. It is not a fraud detector: a flag means an unusual pattern for human review. The prototype runs on synthetic data.",
-    role: "Prototype developer: ML pipeline, API, and dashboard",
+    role: "AI/ML Engineer and Main Developer",
     highlights: [
       "Defined three red-flag features with explicit rules for missing and invalid data: single bidder, how concentrated an agency's awards are in one supplier, and price deviation from the median of comparable contracts.",
       "Scored contracts with an Isolation Forest and flagged those at or above the 85th percentile of the training scores.",

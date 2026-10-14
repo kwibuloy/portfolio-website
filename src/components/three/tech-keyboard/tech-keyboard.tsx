@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { TechDialog } from "@/components/three/tech-keyboard/tech-dialog";
 import { technologies } from "@/content/technologies";
-import { playKeyPress } from "@/lib/preferences";
+import { loadKeyPress, playKeyPress } from "@/lib/preferences";
 
 // Three.js needs the browser, and it is a large library, so the scene is
 // loaded only on the client and only where the keyboard is used.
@@ -26,6 +26,7 @@ const Scene = dynamic(() => import("@/components/three/tech-keyboard/scene"), {
 });
 
 const CARD_OFFSET = 20; // px between the pointer and the hover card
+const PRESS_TRAVEL = 0.07; // seconds for a key to reach the bottom of its press
 const follow = { stiffness: 300, damping: 30 };
 
 /**
@@ -60,11 +61,16 @@ export function TechKeyboard({ mode }: { mode: "summary" | "details" }) {
   const hovered = find(hoveredId);
 
   // One key-press sound each time the pointer (or keyboard focus) lands on a
-  // different key. It is silent unless the visitor has turned sound on.
+  // different key, timed to click as the 3D key reaches the bottom of its
+  // press. It is silent unless the visitor has turned sound on.
+  const pressTravel = reducedMotion ? 0 : PRESS_TRAVEL;
   const hover = (id: string | null) => {
-    if (id && id !== hoveredId) playKeyPress();
+    if (id && id !== hoveredId) playKeyPress(pressTravel);
     setHoveredId(id);
   };
+
+  // Fetch the recording ahead of the first key press (only if sound is on).
+  useEffect(loadKeyPress, []);
 
   const select = (id: string) => {
     if (mode === "details") setOpenId(id);
@@ -91,6 +97,7 @@ export function TechKeyboard({ mode }: { mode: "summary" | "details" }) {
           still scrolls the page on touch screens. */}
       <div
         ref={stage}
+        onPointerEnter={loadKeyPress}
         onPointerMove={(event) => {
           const box = event.currentTarget.getBoundingClientRect();
           // Flip the card to the pointer's left near the right edge.
@@ -109,6 +116,7 @@ export function TechKeyboard({ mode }: { mode: "summary" | "details" }) {
             hoveredId={hoveredId}
             onHover={hover}
             onSelect={select}
+            pressTravel={pressTravel}
             reducedMotion={reducedMotion}
             resetSignal={resetSignal}
           />

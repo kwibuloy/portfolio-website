@@ -15,7 +15,7 @@ export type Education = {
     height: number;
   }[];
   coursework: string[];
-  organisations: { name: string; role: string; period: string }[];
+  organizations: { name: string; role: string; period: string }[];
   /**
    * Start of the degree and expected graduation, as YYYY-MM, for the progress
    * bar. Only the years are confirmed; the months assume an August start and
@@ -25,7 +25,7 @@ export type Education = {
   expectedGraduation: string;
 };
 
-// From the resume, with the organisation dates corrected by Derick.
+// From the resume, with the organization dates corrected by Derick.
 export const education: Education[] = [
   {
     school: "De La Salle University – Dasmariñas",
@@ -65,7 +65,7 @@ export const education: Education[] = [
       "Statistics",
       "Discrete Mathematics",
     ],
-    organisations: [
+    organizations: [
       {
         name: "Computer Science Program Council",
         role: "Campaign Committee",

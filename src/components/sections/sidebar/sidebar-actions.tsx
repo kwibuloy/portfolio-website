@@ -1,10 +1,11 @@
 "use client";
 
-import { Mail, MessageSquare, Users } from "lucide-react";
+import { Compass, Mail, MessageSquare, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AskPanel } from "@/components/sections/sidebar/ask-panel";
 import { ContactPanel } from "@/components/sections/sidebar/contact-panel";
 import { SidePanel } from "@/components/sections/sidebar/side-panel";
+import { startTour } from "@/lib/tour";
 
 const actionClass =
   "group text-text-muted hover:bg-raised hover:text-text flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition-colors";
@@ -21,8 +22,9 @@ const loadVisitors = () =>
     .catch(() => null));
 
 /**
- * The lower block of the sidebar: the chatbot, the unique visitor count, and
- * the contact form. The two buttons open panels beside the sidebar.
+ * The lower block of the sidebar: the chatbot, the unique visitor count, the
+ * contact form, and a button that replays the guided tour. The chatbot and
+ * contact buttons open panels beside the sidebar.
  */
 export function SidebarActions() {
   const [panel, setPanel] = useState<"ask" | "contact" | null>(null);
@@ -43,6 +45,7 @@ export function SidebarActions() {
     <div className="border-border mt-auto flex flex-col gap-1 border-t pt-6">
       <button
         type="button"
+        data-tour="ask"
         className={actionClass}
         onClick={() => setPanel("ask")}
       >
@@ -64,7 +67,12 @@ export function SidebarActions() {
         onClick={() => setPanel("contact")}
       >
         <Mail aria-hidden className={iconClass} />
-        Contact
+        Contact Me
+      </button>
+
+      <button type="button" className={actionClass} onClick={startTour}>
+        <Compass aria-hidden className={iconClass} />
+        Take the tour
       </button>
 
       <SidePanel
@@ -77,7 +85,7 @@ export function SidebarActions() {
       <SidePanel
         open={panel === "contact"}
         onClose={() => setPanel(null)}
-        title="Contact"
+        title="Contact Me"
       >
         <ContactPanel />
       </SidePanel>

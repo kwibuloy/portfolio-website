@@ -3,12 +3,11 @@ import { Hero } from "@/components/sections/home/hero";
 import { SummarySection } from "@/components/sections/home/summary-section";
 import { CertificateFan } from "@/components/sections/certifications/certificate-fan";
 import { ProjectDesktop } from "@/components/sections/projects/project-desktop";
-import { Tag } from "@/components/ui/card";
+import { ServiceTicket } from "@/components/sections/services/service-ticket";
 import { TechKeyboard } from "@/components/three/tech-keyboard/tech-keyboard";
 import { GitTimeline } from "@/components/ui/git-timeline";
 import { education } from "@/content/education";
 import { experience } from "@/content/experience";
-import { services } from "@/content/services";
 
 export default function Home() {
   return (
@@ -54,13 +53,7 @@ export default function Home() {
       </SummarySection>
 
       <SummarySection href="/services">
-        <ul className="flex flex-wrap gap-3">
-          {services.map((service) => (
-            <li key={service.title}>
-              <Tag>{service.title}</Tag>
-            </li>
-          ))}
-        </ul>
+        <ServiceTicket />
       </SummarySection>
 
       <Contributions />

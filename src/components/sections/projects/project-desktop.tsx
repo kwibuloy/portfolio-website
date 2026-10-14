@@ -51,7 +51,8 @@ function ProjectBody({ project }: { project: Project }) {
  * is no room to drag, so the same projects become a swipeable row of cards.
  */
 export function ProjectDesktop() {
-  const desktop = useRef<HTMLDivElement>(null);
+  // The area right of the icons; windows open and drag only inside it.
+  const workspace = useRef<HTMLDivElement>(null);
   // `stack` lists the open windows from back to front.
   const [stack, setStack] = useState(() =>
     projects.slice(0, 3).map((project) => project.slug),
@@ -68,16 +69,14 @@ export function ProjectDesktop() {
 
   return (
     <>
-      <div
-        ref={desktop}
-        className="border-border bg-surface/60 relative hidden h-200 overflow-hidden rounded-2xl border backdrop-blur-sm sm:block"
-      >
+      <div className="border-border bg-surface/60 relative hidden h-200 overflow-hidden rounded-2xl border backdrop-blur-sm sm:block">
         <div className="border-border text-text-subtle flex items-center justify-between border-b px-4 py-2 font-mono text-xs">
           <span>~/projects</span>
           <span aria-hidden>click an icon to open · drag a window to move</span>
         </div>
 
-        <ul className="absolute top-14 left-4 flex flex-col gap-2">
+        {/* The icons have their own rail, so windows never cover them. */}
+        <ul className="border-border absolute top-10 bottom-14 left-0 flex w-36 flex-col items-center gap-2 overflow-y-auto border-r pt-4">
           {projects.map((project) => (
             <li key={project.slug}>
               <button
@@ -95,47 +94,52 @@ export function ProjectDesktop() {
 
         {/* Windows render in a fixed order and only their z-index changes, so
             raising one never moves a DOM node mid-drag. */}
-        <AnimatePresence>
-          {projects.map((project, index) =>
-            stack.includes(project.slug) ? (
-              <motion.section
-                key={project.slug}
-                aria-label={project.title}
-                drag
-                dragConstraints={desktop}
-                dragMomentum={false}
-                dragElastic={0.1}
-                onPointerDown={() => raise(project.slug)}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                // Each window starts a step further right and down.
-                style={{
-                  zIndex: stack.indexOf(project.slug) + 1,
-                  left: `calc(var(--spacing) * ${44 + index * 44})`,
-                  top: `calc(var(--spacing) * ${16 + index * 20})`,
-                }}
-                className="border-border-strong bg-bg absolute w-120 cursor-grab rounded-xl border shadow-xl active:cursor-grabbing"
-              >
-                <header className="border-border flex items-center justify-between gap-3 border-b px-4 py-2">
-                  <h3 className="truncate font-mono text-sm font-medium">
-                    {project.title}
-                  </h3>
-                  <button
-                    type="button"
-                    aria-label={`Close ${project.title}`}
-                    onClick={() => close(project.slug)}
-                    className="text-text-muted hover:bg-raised hover:text-text flex size-7 shrink-0 items-center justify-center rounded-full transition-colors"
-                  >
-                    <X aria-hidden className="size-4" />
-                  </button>
-                </header>
-                <ProjectBody project={project} />
-              </motion.section>
-            ) : null,
-          )}
-        </AnimatePresence>
+        <div
+          ref={workspace}
+          className="absolute top-10 right-0 bottom-14 left-36"
+        >
+          <AnimatePresence>
+            {projects.map((project, index) =>
+              stack.includes(project.slug) ? (
+                <motion.section
+                  key={project.slug}
+                  aria-label={project.title}
+                  drag
+                  dragConstraints={workspace}
+                  dragMomentum={false}
+                  dragElastic={0.1}
+                  onPointerDown={() => raise(project.slug)}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  // Each window starts a step further right and down.
+                  style={{
+                    zIndex: stack.indexOf(project.slug) + 1,
+                    left: `calc(var(--spacing) * ${4 + index * 10})`,
+                    top: `calc(var(--spacing) * ${4 + index * 8})`,
+                  }}
+                  className="border-border-strong bg-bg absolute w-3/4 max-w-120 cursor-grab rounded-xl border shadow-xl active:cursor-grabbing"
+                >
+                  <header className="border-border flex items-center justify-between gap-3 border-b px-4 py-2">
+                    <h3 className="truncate font-mono text-sm font-medium">
+                      {project.title}
+                    </h3>
+                    <button
+                      type="button"
+                      aria-label={`Close ${project.title}`}
+                      onClick={() => close(project.slug)}
+                      className="text-text-muted hover:bg-raised hover:text-text flex size-7 shrink-0 items-center justify-center rounded-full transition-colors"
+                    >
+                      <X aria-hidden className="size-4" />
+                    </button>
+                  </header>
+                  <ProjectBody project={project} />
+                </motion.section>
+              ) : null,
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Taskbar: one button per project. It opens a closed window and
             brings an open one to the front. */}

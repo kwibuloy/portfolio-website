@@ -3,6 +3,7 @@
 import { Plus } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
+import { PulseDot } from "@/components/ui/pulse-dot";
 import { experience } from "@/content/experience";
 
 const list = { shown: { transition: { staggerChildren: 0.07 } } };
@@ -17,10 +18,7 @@ const bandClass =
 function Now() {
   return (
     <span className="inline-flex items-center gap-2 font-mono text-xs">
-      <span className="relative flex size-2">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-60 motion-reduce:animate-none" />
-        <span className="relative inline-flex size-2 rounded-full bg-current" />
-      </span>
+      <PulseDot />
       now
     </span>
   );

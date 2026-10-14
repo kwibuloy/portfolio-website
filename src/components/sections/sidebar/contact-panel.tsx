@@ -23,8 +23,13 @@ type Status = "idle" | "sending" | "sent";
  * validates again and emails the message. The fields are controlled state,
  * so a failed send keeps everything the visitor typed.
  */
-export function ContactPanel() {
-  const [values, setValues] = useState(empty);
+export function ContactPanel({
+  initialMessage = "",
+}: {
+  /** Pre-fills the message, for example with the services picked on the order ticket. */
+  initialMessage?: string;
+}) {
+  const [values, setValues] = useState({ ...empty, message: initialMessage });
   const [website, setWebsite] = useState(""); // honeypot, see below
   const [errors, setErrors] = useState<ContactErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
