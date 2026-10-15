@@ -9,6 +9,7 @@ Revised 2026-10-13: monochrome. White base with gradients of gray and black, plu
 - `src/app/globals.css` is the source of truth. Tailwind 4 has no `tailwind.config`; theme tokens are CSS variables in the `@theme` block.
 - Colours are defined on `:root` (light) and `[data-theme="dark"]`, then exposed to Tailwind as `--color-*`.
 - Theme and sound state are `data-theme` / `data-sound` attributes on `<html>`. An inline script in `src/app/layout.tsx` sets them before first paint, and the `dark:` and `sound-on:` variants style against them. The logic is in `src/lib/preferences.ts`.
+- **Scale** (2026-10-15): the desktop design was tuned at 80% browser zoom, so from `64rem` up `html` has `font-size: 80%` (in `globals.css`). Every size is in rem, so this scales the whole layout. Phones and tablets stay at 100% to keep small text readable. Check designs at 100% browser zoom from now on.
 - The contour lines are `public/contours.svg`, a tiling SVG applied as a CSS mask by the `.contour-lines` class, so the line colour is the `--contour` token.
 
 ## Site-wide motion

@@ -186,6 +186,17 @@
 }
 
 @layer base {
+  /* The desktop design was made at 80% browser zoom. Every size is in rem, so
+     a smaller root font scales the whole layout to match at 100% zoom. A
+     percentage keeps the visitor's own font-size setting in the calculation.
+     Phones and tablets keep the full size so small text stays readable.
+     Media queries in rem ignore this rule, so breakpoints do not move. */
+  @media (min-width: 64rem) {
+    html {
+      font-size: 80%;
+    }
+  }
+
   body {
     background: var(--bg);
     color: var(--text);
