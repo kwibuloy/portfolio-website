@@ -2,13 +2,18 @@
 
 import { MousePointer2, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { site } from "@/content/site";
 import { tour } from "@/content/tour";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { playTick } from "@/lib/preferences";
-import { TOUR_DRAWER_EVENT, TOUR_SEEN_KEY, TOUR_START_EVENT } from "@/lib/tour";
+import {
+  TOUR_DRAWER_EVENT,
+  TOUR_SEEN_KEY,
+  TOUR_START_EVENT,
+  takeTourRequest,
+} from "@/lib/tour";
 
 /** How long after the home page loads the tour starts, so the hero's own
     entrance plays first. */
@@ -16,13 +21,37 @@ const START_DELAY = 1500;
 /** Time per typed character, and the pause to read once a line is typed. */
 const TYPE_MS = 28;
 const READ_MS = 1400;
-/** The bubble's width in rem (w-64) and the gap it keeps from the screen's
-    edges, so it can be slid back on screen near an edge. */
+/** The bubble's width in rem (w-64), the height a long line takes, the gap
+    it keeps from the screen's edges and from the target, and the pointer's
+    size, all in rem. Used to decide where the bubble fits. */
 const BUBBLE_REM = 16;
+const BUBBLE_HEIGHT_REM = 7;
 const MARGIN_REM = 1;
+const GAP_REM = 0.25;
+// The arrow icon is 1.5rem, nudged up 0.25rem so its tip is on the point.
+const POINTER_REM = 1.25;
 
 /** The pointer, selected inside the tour's GSAP scope. */
 const POINTER = "[data-tour-pointer]";
+
+/** Anything the visitor does that means "let me look around myself": it ends
+    the tour, or stops it from starting. Plain mouse movement does not count,
+    so the visitor can follow along. */
+const INPUT_EVENTS = ["keydown", "wheel", "touchmove", "pointerdown"] as const;
+
+/** Calls `onInput` on the visitor's first scroll, click, tap or key press. */
+function onVisitorInput(onInput: () => void) {
+  // Capture, so a part of the page that stops the event (the tech keyboard
+  // stops wheel events) cannot hide it from the tour.
+  const options = { capture: true, passive: true };
+  INPUT_EVENTS.forEach((type) =>
+    window.addEventListener(type, onInput, options),
+  );
+  return () =>
+    INPUT_EVENTS.forEach((type) =>
+      window.removeEventListener(type, onInput, options),
+    );
+}
 
 class Stopped extends Error {}
 
@@ -51,6 +80,64 @@ function findTarget(name: string) {
 function pointAt(element: HTMLElement) {
   const box = element.getBoundingClientRect();
   return { x: box.left + box.width / 2, y: box.top + box.height * 0.6 };
+}
+
+/** Where the bubble goes, relative to the pointer's tip: `x` to its left
+    edge, `y` to its top edge (or its bottom edge when `above`). */
+type Placement = { x: number; y: number; above: boolean };
+
+/**
+ * Places the bubble next to the target without covering it: below the
+ * whole target when there is room, otherwise above it (the Skip button at
+ * the bottom of the screen gets it above). Sideways it starts just right of
+ * the pointer, flips to end at the pointer near the right edge, and always
+ * stays on screen.
+ *
+ * `anchor: "pointer"` (the portrait) hangs it just under the pointer
+ * instead, or just over it near the bottom of the screen: on a big target,
+ * clearing the whole target would put the bubble far from the pointer.
+ */
+function placeBubble(
+  box: DOMRect,
+  x: number,
+  y: number,
+  anchor: "pointer" | "target" = "target",
+): Placement {
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const gap = GAP_REM * rem;
+  const width = BUBBLE_REM * rem;
+  const margin = MARGIN_REM * rem;
+
+  if (anchor === "pointer") {
+    const above = y > window.innerHeight - BUBBLE_HEIGHT_REM * rem - margin;
+    const left = gsap.utils.clamp(
+      margin,
+      window.innerWidth - width - margin,
+      x + 2 * gap,
+    );
+    return {
+      x: left - x,
+      y: above ? -2 * gap : POINTER_REM * rem + 2 * gap,
+      above,
+    };
+  }
+
+  const needed = BUBBLE_HEIGHT_REM * rem + gap + margin;
+  const spaceBelow = window.innerHeight - box.bottom;
+  const above = spaceBelow < needed && box.top > spaceBelow;
+
+  let left = x + gap;
+  if (left + width > window.innerWidth - margin) left = x - width + gap;
+  left = gsap.utils.clamp(margin, window.innerWidth - width - margin, left);
+
+  return {
+    x: left - x,
+    y: above
+      ? box.top - y - gap
+      : // Clear the pointer icon too, which hangs below its tip.
+        Math.max(box.bottom - y, POINTER_REM * rem) + gap,
+    above,
+  };
 }
 
 /**
@@ -99,10 +186,11 @@ function hasSeen() {
 
 /**
  * A cursor with a chat bubble that tours the home page on a visitor's first
- * visit: it greets them at the portrait, points at each social link in the
- * intro, then walks down the sidebar. It plays through on its own; Escape
- * ends it, and small screens get a Skip button. "Take the tour" in the
- * sidebar replays it.
+ * visit: it greets them at the portrait, points at the Skip button to say how
+ * to end the tour, points at each social link in the intro, then walks down
+ * the sidebar. It plays through on its own. Skip, Escape, or any scroll,
+ * click, tap or key press ends it. "Take the tour" in the sidebar replays it
+ * (see tour-loader.tsx, which loads this component).
  *
  * The pointer is moved by GSAP; the bubble inside it pops in and out with
  * Motion, so each library owns its own element. The full line is announced
@@ -110,7 +198,6 @@ function hasSeen() {
  */
 export function GuidedTour() {
   const pathname = usePathname();
-  const router = useRouter();
   const reducedMotion = useReducedMotion() ?? false;
 
   const layer = useRef<HTMLDivElement>(null);
@@ -121,10 +208,17 @@ export function GuidedTour() {
 
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
+  // The current step's full line: its text, or touchText on touch screens.
+  const [line, setLine] = useState("");
   const [typed, setTyped] = useState("");
-  // Where the bubble sits relative to the pointer's tip: shifted sideways to
-  // stay on screen, and above the pointer near the bottom of the screen.
-  const [bubble, setBubble] = useState({ x: 8, above: false });
+  // True while there is a tour on screen to skip.
+  const [skippable, setSkippable] = useState(false);
+  // Where the bubble sits relative to the pointer's tip (see placeBubble).
+  const [bubble, setBubble] = useState<Placement>({
+    x: 8,
+    y: 24,
+    above: false,
+  });
 
   const { contextSafe } = useGSAP({ scope: layer });
 
@@ -177,6 +271,7 @@ export function GuidedTour() {
   const play = useCallback(
     async (signal: AbortSignal) => {
       const desktop = matchMedia("(min-width: 64rem)").matches;
+      const touch = matchMedia("(hover: none)").matches;
       let drawerOpen = false;
       const drawer = (open: boolean) => {
         drawerOpen = open;
@@ -196,7 +291,9 @@ export function GuidedTour() {
           });
         await fade(true);
 
-        for (const [index, { target, text }] of tour.entries()) {
+        for (const [index, { target, bubbleAt, ...copy }] of tour.entries()) {
+          const text = (touch && copy.touchText) || copy.text;
+
           // On small screens the nav lives in the drawer: open it first and
           // let it slide in.
           const inSidebar = target.startsWith("nav-") || target === "ask";
@@ -219,20 +316,18 @@ export function GuidedTour() {
           }
 
           const { x, y } = pointAt(element);
-          const rem = parseFloat(
-            getComputedStyle(document.documentElement).fontSize,
+          setBubble(
+            placeBubble(element.getBoundingClientRect(), x, y, bubbleAt),
           );
-          const left = gsap.utils.clamp(
-            MARGIN_REM * rem,
-            window.innerWidth - (BUBBLE_REM + MARGIN_REM) * rem,
-            x + 8,
-          );
-          setBubble({ x: left - x, above: y > window.innerHeight - 200 });
           setStep(index);
+          setLine(text);
           setTyped("");
           await glide(x, y);
           if (signal.aborted) throw new Stopped();
           hover(element);
+          // Skip shows once the tour has something on screen, so it is
+          // never there without a tour to skip.
+          setSkippable(true);
           playTick();
 
           if (reducedMotion) {
@@ -251,6 +346,7 @@ export function GuidedTour() {
         if (drawerOpen) drawer(false);
         // A replay may already have taken over; leave its pointer alone.
         if (controller.current?.signal === signal) {
+          setSkippable(false);
           hover(null);
           await fade(false);
           setActive(false);
@@ -268,54 +364,70 @@ export function GuidedTour() {
     void play(next.signal);
   }, [play]);
 
-  const stop = useCallback(() => controller.current?.abort(), []);
+  // Skip goes away the moment the tour is stopped, not after the pointer has
+  // faded out.
+  const stop = useCallback(() => {
+    setSkippable(false);
+    controller.current?.abort();
+  }, []);
 
-  // First visit to the home page: play once the hero has come in.
+  // On the home page: play once the hero has come in, on a first visit or
+  // when "Take the tour" was pressed on another page. A first-visit tour that
+  // has not started yet is called off if the visitor is already scrolling or
+  // clicking around.
   useEffect(() => {
     if (pathname !== "/") return;
-    if (!pending.current && hasSeen()) return;
-    pending.current = false;
-    const timer = setTimeout(start, START_DELAY);
-    return () => clearTimeout(timer);
+    // Kept in a ref, so it survives the effect running twice in development.
+    pending.current ||= takeTourRequest();
+    const requested = pending.current;
+    if (!requested && hasSeen()) return;
+    const timer = setTimeout(() => {
+      pending.current = false;
+      start();
+    }, START_DELAY);
+    const removeListeners = requested
+      ? undefined
+      : // The visitor chose to look around: count it as seen, so the tour
+        // does not keep waiting for them on every visit.
+        onVisitorInput(() => {
+          clearTimeout(timer);
+          storeSeen();
+        });
+    return () => {
+      clearTimeout(timer);
+      removeListeners?.();
+    };
   }, [pathname, start]);
 
   // Leaving the home page ends the tour.
   useEffect(() => {
-    if (pathname !== "/") stop();
-  }, [pathname, stop]);
+    // The tour's own cleanup hides Skip, so no state is set here.
+    if (pathname !== "/") controller.current?.abort();
+  }, [pathname]);
 
-  // "Take the tour": replay now, or go home first and play there.
+  // "Take the tour" on the home page: replay now. From another page,
+  // tour-loader.tsx goes home and the effect above picks the request up.
   useEffect(() => {
     const onStart = () => {
-      if (window.location.pathname === "/") {
-        start();
-        return;
-      }
-      pending.current = true;
-      router.push("/");
+      if (window.location.pathname === "/" && takeTourRequest()) start();
     };
     window.addEventListener(TOUR_START_EVENT, onStart);
     return () => window.removeEventListener(TOUR_START_EVENT, onStart);
-  }, [router, start]);
+  }, [start]);
 
-  // Escape ends it. Scrolling or resizing keeps the pointer on its target
-  // while it rests there.
+  // Any scroll, click, tap or key press (Escape included) ends it. Resizing
+  // keeps the pointer on its target while it rests there.
   useEffect(() => {
     if (!active) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") stop();
-    };
     const follow = () => {
       const target = pointer.current;
       if (!target || !current.current || gsap.isTweening(target)) return;
       gsap.set(target, pointAt(current.current));
     };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", follow, { passive: true });
+    const removeListeners = onVisitorInput(stop);
     window.addEventListener("resize", follow);
     return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", follow);
+      removeListeners();
       window.removeEventListener("resize", follow);
     };
   }, [active, stop]);
@@ -326,14 +438,16 @@ export function GuidedTour() {
     <div ref={layer}>
       {/* Announces each line in full as its step starts. */}
       <p className="sr-only" aria-live="polite">
-        {active ? tour[step]?.text : ""}
+        {active ? line : ""}
       </p>
 
       <div
         ref={pointer}
         data-tour-pointer
         aria-hidden
-        className="pointer-events-none invisible fixed top-0 left-0 z-50 opacity-0"
+        // z-60: above the Skip button (z-50), so the pointer rests on top of
+        // it instead of sliding underneath.
+        className="pointer-events-none invisible fixed top-0 left-0 z-60 opacity-0"
       >
         <MousePointer2 className="fill-accent text-bg size-6 -translate-x-1 -translate-y-1 drop-shadow-md" />
         <AnimatePresence mode="wait">
@@ -344,11 +458,15 @@ export function GuidedTour() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.85 }}
               transition={{ duration: 0.18 }}
-              style={{ left: bubble.x }}
-              className={`border-border-strong bg-surface text-text absolute flex w-64 items-start gap-3 rounded-2xl border p-3 text-sm shadow-xl ${
-                bubble.above
-                  ? "bottom-full mb-2 origin-bottom-left"
-                  : "top-full mt-2 origin-top-left"
+              // Placed by placeBubble. Above the target, y: -100% lifts the
+              // bubble so its bottom edge sits at `top`.
+              style={{
+                left: bubble.x,
+                top: bubble.y,
+                y: bubble.above ? "-100%" : 0,
+              }}
+              className={`border-border-strong bg-surface text-text absolute top-0 left-0 flex w-64 items-start gap-3 rounded-2xl border p-3 text-sm shadow-xl ${
+                bubble.above ? "origin-bottom" : "origin-top"
               }`}
             >
               <span className="bg-accent text-on-accent flex size-7 shrink-0 items-center justify-center rounded-full font-mono text-xs">
@@ -356,8 +474,8 @@ export function GuidedTour() {
               </span>
               <p className="leading-snug">
                 {typed}
-                {typed !== tour[step]?.text && (
-                  <span className="bg-text ml-0.5 inline-block h-3.5 w-px animate-pulse align-middle" />
+                {typed !== line && (
+                  <span className="bg-text ml-0.5 inline-block h-3.5 w-px animate-pulse align-middle motion-reduce:animate-none" />
                 )}
               </p>
             </motion.div>
@@ -366,17 +484,26 @@ export function GuidedTour() {
       </div>
 
       <AnimatePresence>
-        {active && (
+        {skippable && (
           <motion.button
             type="button"
+            data-tour="tour-skip"
+            aria-keyshortcuts="Escape"
             onClick={stop}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
-            className="border-border-strong bg-surface/90 text-text fixed right-4 bottom-6 z-50 flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-sm shadow-lg backdrop-blur-md lg:hidden"
+            className="border-border-strong bg-surface/90 text-text hover:bg-raised fixed right-4 bottom-6 z-50 flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-sm shadow-lg backdrop-blur-md"
           >
             <X aria-hidden className="size-4" />
             Skip tour
+            {/* Only where there is likely a keyboard. */}
+            <kbd
+              aria-hidden
+              className="border-border-strong text-text-subtle hidden rounded border px-1.5 font-mono text-xs [@media(hover:hover)]:inline"
+            >
+              Esc
+            </kbd>
           </motion.button>
         )}
       </AnimatePresence>

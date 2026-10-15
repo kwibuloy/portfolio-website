@@ -32,9 +32,12 @@ A 3D interactive numpad-style keyboard where each key is a technology Derick use
 - `key-styles.ts`: brand colour and logo per technology id, from the `simple-icons` package. VS Code and Antigravity are not in that set, so their logo paths are copied from Devicon (MIT).
 - The keyboard floats: the canvas is twice the height of the section and ignores the pointer, and the section element receives the input (`eventSource` on the R3F canvas). Nothing frames or clips it, and the detail text sits below it, never on top. Drag rotates, Ctrl + scroll or pinch zooms (a plain scroll still scrolls the page), two fingers rotate on touch, and "Reset view" restores the camera.
 - Adding a technology: add it to `technologies.ts`, add its entry to `key-styles.ts`, and re-run the Blender script.
-- Not handled yet: a fallback for browsers without WebGL.
+- **Loading** (2026-10-14, pre-deploy audit): the scene, and three.js with it, mounts only once the keyboard is within 400px of the viewport (an `IntersectionObserver`), so it does not compete with the hero on load. The `aspect-2/1` stage holds the space meanwhile.
+- **No WebGL** (2026-10-14): if the browser has no WebGL, or the scene throws (lost context, model or chunk failed to download), `three/scene-boundary.tsx` catches it and the hidden key buttons are shown as a plain list of chips instead. The page never goes down with the canvas.
+- **Popup ink**: `inkFor` in `key-styles.ts` picks whichever of `#111111` and white has the higher contrast on the brand colour, so the popup header text passes AA. The 3D key logos keep the white-logo look (dark only on the lightest keys); logos are exempt from the text contrast rule.
 
 ## Data and accessibility
 
 - The technology list and experience text are in `src/content/technologies.ts`. The 3D scene and the accessible fallback both read from it.
-- Keyboard access: visually hidden buttons inside the section mirror every key; focusing one presses its 3D key and shows the card, and activating one opens the popup on `/tech-stack`.
+- Keyboard access: visually hidden buttons inside the section mirror every key; focusing one presses its 3D key and shows the card, and activating one opens the popup on `/tech-stack`. The canvas wrapper is `aria-hidden`; the buttons are its text version.
+- The live region announces a key only when keyboard focus lands on it, not on mouse hover.

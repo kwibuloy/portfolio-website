@@ -68,7 +68,7 @@ export function TechDialog({
             style={{ backgroundColor: style.color, color: ink }}
           >
             <div className="flex flex-col gap-2">
-              <p className="font-mono text-xs tracking-widest uppercase opacity-80">
+              <p className="font-mono text-xs tracking-widest uppercase">
                 {tech.category}
               </p>
               <h2
@@ -103,7 +103,7 @@ export function TechDialog({
               type="button"
               aria-label="Close"
               onClick={onClose}
-              className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-full transition-transform hover:scale-110 hover:rotate-90 motion-reduce:transition-none"
+              className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-full transition-transform hover:scale-110 hover:rotate-90 focus-visible:outline-current motion-reduce:transition-none"
             >
               <X aria-hidden className="size-5" />
             </button>

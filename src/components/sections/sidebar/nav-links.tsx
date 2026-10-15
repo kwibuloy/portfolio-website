@@ -45,11 +45,12 @@ export function NavLinks({ id }: { id: string }) {
         const active = pathname === href;
         const Icon = icons[href];
         return (
-          <motion.li
+          // A CSS entrance, so the nav is there from the first paint (see
+          // --animate-reveal-left in globals.css).
+          <li
             key={href}
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 + index * 0.06, duration: 0.4 }}
+            className="animate-reveal-left motion-reduce:animate-none"
+            style={{ animationDelay: `${0.1 + index * 0.06}s` }}
           >
             <Link
               href={href}
@@ -97,7 +98,7 @@ export function NavLinks({ id }: { id: string }) {
                 }`}
               />
             </Link>
-          </motion.li>
+          </li>
         );
       })}
     </ul>

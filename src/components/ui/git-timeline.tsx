@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { gsap, useGSAP } from "@/lib/gsap";
+import { gsap, useGSAP } from "@/lib/gsap-scroll";
 
 export type Commit = {
   id: string;

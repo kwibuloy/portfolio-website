@@ -23,6 +23,9 @@ export const site = {
   /** The hero introduction. The name and role are shown above it, so it does not repeat them. */
   intro:
     "I build full-stack web apps with AI and machine learning inside them, from the database and API to an interface that feels fast and polished. I can take a product from idea to deployment, add machine learning to one you already have, or turn raw data into analysis you can act on. I'm a third-year Computer Science student at De La Salle University - Dasmariñas, specializing in Intelligent Systems.",
+  /** Search results and link previews. Kept under about 160 characters. */
+  description:
+    "Fullstack developer and AI/ML engineer building web apps with machine learning inside them. Computer Science student at De La Salle University - Dasmariñas.",
 };
 
 export const socials: SocialLink[] = [

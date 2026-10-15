@@ -2,7 +2,7 @@
 
 import { Folder, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Tag } from "@/components/ui/card";
 import { type Project, projects } from "@/content/projects";
 
@@ -49,6 +49,9 @@ function ProjectBody({ project }: { project: Project }) {
  * Projects as app windows on a desktop. Icons and the taskbar open a window; windows can
  * be dragged, brought to the front, and closed. Below the sm breakpoint there
  * is no room to drag, so the same projects become a swipeable row of cards.
+ *
+ * Keyboard: opening a window from an icon or the taskbar moves focus into
+ * it, and tabbing into a window that is covered brings it to the front.
  */
 export function ProjectDesktop() {
   // The area right of the icons; windows open and drag only inside it.
@@ -64,8 +67,26 @@ export function ProjectDesktop() {
         ? current
         : [...current.filter((open) => open !== slug), slug],
     );
-  const close = (slug: string) =>
+  // Closing removes the focused close button with its window, so focus goes
+  // back to the project's icon instead of falling to the page.
+  const close = (slug: string) => {
     setStack((current) => current.filter((open) => open !== slug));
+    document
+      .querySelector<HTMLElement>(`[data-project-icon="${slug}"]`)
+      ?.focus();
+  };
+
+  // The window to move focus to once it is on screen (it may only just have
+  // opened), with a counter so opening the same one twice focuses it again.
+  const [focusRequest, setFocusRequest] = useState({ slug: "", count: 0 });
+  const open = (slug: string) => {
+    raise(slug);
+    setFocusRequest(({ count }) => ({ slug, count: count + 1 }));
+  };
+  useEffect(() => {
+    if (focusRequest.slug)
+      document.getElementById(`window-${focusRequest.slug}`)?.focus();
+  }, [focusRequest]);
 
   return (
     <>
@@ -81,8 +102,8 @@ export function ProjectDesktop() {
             <li key={project.slug}>
               <button
                 type="button"
-                aria-expanded={stack.includes(project.slug)}
-                onClick={() => raise(project.slug)}
+                data-project-icon={project.slug}
+                onClick={() => open(project.slug)}
                 className="hover:bg-raised flex w-28 flex-col items-center gap-2 rounded-lg p-3 text-center font-mono text-sm transition-colors"
               >
                 <Folder aria-hidden className="size-12" />
@@ -109,6 +130,7 @@ export function ProjectDesktop() {
                   dragMomentum={false}
                   dragElastic={0.1}
                   onPointerDown={() => raise(project.slug)}
+                  onFocus={() => raise(project.slug)}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
@@ -122,7 +144,11 @@ export function ProjectDesktop() {
                   className="border-border-strong bg-bg absolute w-3/4 max-w-120 cursor-grab rounded-xl border shadow-xl active:cursor-grabbing"
                 >
                   <header className="border-border flex items-center justify-between gap-3 border-b px-4 py-2">
-                    <h3 className="truncate font-mono text-sm font-medium">
+                    <h3
+                      id={`window-${project.slug}`}
+                      tabIndex={-1}
+                      className="truncate font-mono text-sm font-medium"
+                    >
                       {project.title}
                     </h3>
                     <button
@@ -145,24 +171,24 @@ export function ProjectDesktop() {
             brings an open one to the front. */}
         <ul className="border-border bg-bg/80 absolute inset-x-0 bottom-0 z-50 flex gap-2 border-t p-2 backdrop-blur-md">
           {projects.map((project) => {
-            const open = stack.includes(project.slug);
+            const isOpen = stack.includes(project.slug);
             return (
               <li key={project.slug}>
                 <button
                   type="button"
-                  aria-pressed={open}
-                  onClick={() => raise(project.slug)}
+                  onClick={() => open(project.slug)}
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 font-mono text-xs transition-colors ${
-                    open
+                    isOpen
                       ? "bg-raised text-text"
                       : "text-text-muted hover:bg-raised"
                   }`}
                 >
                   <span
                     aria-hidden
-                    className={`size-2 rounded-full ${open ? "bg-accent" : "bg-border-strong"}`}
+                    className={`size-2 rounded-full ${isOpen ? "bg-accent" : "bg-border-strong"}`}
                   />
                   {project.title}
+                  {isOpen && <span className="sr-only"> (open)</span>}
                 </button>
               </li>
             );

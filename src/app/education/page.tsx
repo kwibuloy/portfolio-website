@@ -6,8 +6,12 @@ import { AwardPhotos } from "@/components/sections/education/award-photos";
 import { PageShell } from "@/components/ui/page-shell";
 import { Reveal } from "@/components/ui/reveal";
 import { education } from "@/content/education";
+import { navItem } from "@/content/site";
 
-export const metadata: Metadata = { title: "Education" };
+export const metadata: Metadata = {
+  title: "Education",
+  description: navItem("/education").blurb,
+};
 
 const labelClass =
   "text-text-subtle font-mono text-xs tracking-widest uppercase";

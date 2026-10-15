@@ -28,15 +28,19 @@
   --raised: #ececec;
   --border: #e2e2e2;
   --border-strong: #c4c4c4;
+  /* Form field outlines: 3:1 against the panels, so a field can be found. */
+  --input-border: #8a8a8a;
   --text: #111111;
   --text-muted: #4d4d4d;
-  --text-subtle: #666666;
+  --text-subtle: #5a5a5a;
   --accent: #111111;
   --on-accent: #ffffff;
-  /* One translucent grey for both themes: over --bg it reads as #cbcbcb in
-     light and #363636 in dark (1.62:1 either way). The lines never change
-     colour, so a theme switch only moves the background under them. */
-  --contour: rgb(121 121 121 / 0.387);
+  /* One translucent grey for both themes: over --bg it reads as #dddddd in
+     light and #272727 in dark (about 1.3:1 either way). The lines never
+     change colour, so a theme switch only moves the background under them.
+     Kept this faint so --text-subtle still passes 4.5:1 where a line crosses
+     the --glow-deep shape (see background.tsx). */
+  --contour: rgb(121 121 121 / 0.25);
   --glow: #dedede;
   --glow-deep: #8f8f8f;
 }
@@ -48,9 +52,10 @@
   --raised: #1c1c1c;
   --border: #2a2a2a;
   --border-strong: #3d3d3d;
+  --input-border: #6a6a6a;
   --text: #f4f4f4;
   --text-muted: #a8a8a8;
-  --text-subtle: #8a8a8a;
+  --text-subtle: #9c9c9c;
   --accent: #f4f4f4;
   --on-accent: #0c0c0c;
   --glow: #2d2d2d;
@@ -63,6 +68,7 @@
   --color-raised: var(--raised);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-input-border: var(--input-border);
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
   --color-text-subtle: var(--text-subtle);
@@ -89,6 +95,26 @@
     }
     to {
       transform: translate3d(6%, -8%, 0) scale(1.15);
+    }
+  }
+
+  /* Entrances for what is on screen when a page loads (ui/reveal.tsx with
+     `immediate`, and the nav). They are CSS, not Motion, so they start with the
+     first paint instead of after hydration, and the content still shows if
+     JavaScript is slow or fails. Pair with motion-reduce:animate-none. */
+  --animate-reveal: reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-reveal-left: reveal-left 0.4s ease-out both;
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem);
+    }
+  }
+  @keyframes reveal-left {
+    from {
+      opacity: 0;
+      transform: translateX(-1rem);
     }
   }
 }

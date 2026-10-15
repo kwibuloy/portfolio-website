@@ -4,7 +4,11 @@ import { ArrowUp } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { gsap, useGSAP } from "@/lib/gsap";
+
+// GSAP is fetched only once the button shows, so pages that never need it
+// (most of them) do not download it. The import is cached after the first.
+const loadGsap = () => import("@/lib/gsap-scroll-to").then((m) => m.gsap);
+type Timeline = ReturnType<Awaited<ReturnType<typeof loadGsap>>["timeline"]>;
 
 /** Pages shorter than this many screens never show the button. */
 const LONG_PAGE = 2.5;
@@ -56,37 +60,64 @@ export function BackToTop() {
     };
   }, [pathname]);
 
-  const { contextSafe } = useGSAP({ scope });
+  const flight = useRef<Timeline | null>(null);
 
-  const launch = contextSafe(() => {
+  // Fetch GSAP as the button appears, so the click has no wait. A failure
+  // here is handled when the button is pressed.
+  useEffect(() => {
+    if (atBottom) loadGsap().catch(() => {});
+  }, [atBottom]);
+
+  // This component lives in the root layout and never unmounts, so a link
+  // clicked mid-flight would leave the flight scrolling the new page. Jump it
+  // to its end instead, which also runs `done` and brings the button back.
+  useEffect(() => {
+    flight.current?.progress(1);
+  }, [pathname]);
+
+  const launch = async () => {
     // Keyboard focus moves to the top too, instead of staying at the bottom.
     const done = () => {
       setFlying(false);
       document.getElementById("content")?.focus({ preventScroll: true });
     };
-    if (reducedMotion) {
+    const jump = () => {
       window.scrollTo({ top: 0, behavior: "instant" });
       done();
+    };
+    if (reducedMotion) {
+      jump();
       return;
     }
 
     // Hides the button for the length of the flight.
     setFlying(true);
-    const { random } = gsap.utils;
+    let gsap: Awaited<ReturnType<typeof loadGsap>>;
+    try {
+      gsap = await loadGsap();
+    } catch {
+      // GSAP did not download (offline, or a redeploy): no flight, but the
+      // page still goes to the top.
+      jump();
+      return;
+    }
+    const { random, selector } = gsap.utils;
+    // Streaks are looked up inside this component only.
+    const wind = selector(scope)(".back-to-top-wind");
     const screen = window.innerHeight;
-    gsap.set(".back-to-top-wind", {
+    gsap.set(wind, {
       x: () => random(0, window.innerWidth),
       y: -screen * 0.4,
       scaleY: () => random(0.5, 1.6),
       opacity: () => random(0.35, 0.8),
     });
-    gsap
+    flight.current = gsap
       .timeline({ onComplete: done })
       .to(window, { scrollTo: 0, duration: 1, ease: "power3.inOut" }, 0)
       // Streaks move down the screen, the opposite way to the scroll, at
       // slightly different speeds so they read as wind and not a pattern.
       .to(
-        ".back-to-top-wind",
+        wind,
         {
           y: screen * 1.2,
           duration: () => random(0.35, 0.6),
@@ -95,8 +126,8 @@ export function BackToTop() {
         },
         0.08,
       )
-      .set(".back-to-top-wind", { opacity: 0 });
-  });
+      .set(wind, { opacity: 0 });
+  };
 
   return (
     <div ref={scope}>

@@ -5,8 +5,12 @@ import { ServiceTicket } from "@/components/sections/services/service-ticket";
 import { PageShell } from "@/components/ui/page-shell";
 import { Reveal } from "@/components/ui/reveal";
 import { faq, services, workSteps } from "@/content/services";
+import { navItem } from "@/content/site";
 
-export const metadata: Metadata = { title: "Services" };
+export const metadata: Metadata = {
+  title: "Services",
+  description: navItem("/services").blurb,
+};
 
 const labelClass =
   "text-text-subtle font-mono text-xs tracking-widest uppercase";

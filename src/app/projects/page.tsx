@@ -4,8 +4,12 @@ import { Tag } from "@/components/ui/card";
 import { PageShell } from "@/components/ui/page-shell";
 import { Reveal } from "@/components/ui/reveal";
 import { projects } from "@/content/projects";
+import { navItem } from "@/content/site";
 
-export const metadata: Metadata = { title: "Projects" };
+export const metadata: Metadata = {
+  title: "Projects",
+  description: navItem("/projects").blurb,
+};
 
 const labelClass =
   "text-text-subtle font-mono text-xs tracking-widest uppercase";

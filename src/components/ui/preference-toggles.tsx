@@ -14,16 +14,18 @@ const iconMotion =
 // through useSyncExternalStore keeps aria-pressed in step with it without a
 // hydration mismatch: the server renders no pressed state, and the client
 // fills it in right after hydrating.
+// The sound setting on <html data-sound> is read the same way.
 function subscribe(onChange: () => void) {
   const observer = new MutationObserver(onChange);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ["data-theme"],
+    attributeFilter: ["data-theme", "data-sound"],
   });
   return () => observer.disconnect();
 }
 const readTheme = () => document.documentElement.dataset.theme;
-const serverTheme = () => undefined;
+const readSound = () => document.documentElement.dataset.sound;
+const onServer = () => undefined;
 
 /**
  * Light and dark as two joined buttons with a pill that slides to the one in
@@ -32,7 +34,8 @@ const serverTheme = () => undefined;
  * sound-on: variants, so they are right from the first paint.
  */
 export function PreferenceToggles() {
-  const theme = useSyncExternalStore(subscribe, readTheme, serverTheme);
+  const theme = useSyncExternalStore(subscribe, readTheme, onServer);
+  const sound = useSyncExternalStore(subscribe, readSound, onServer);
 
   return (
     <div className="flex shrink-0 items-center gap-1.5">
@@ -77,7 +80,8 @@ export function PreferenceToggles() {
         type="button"
         onClick={toggleSound}
         className="border-border text-text-muted hover:bg-raised hover:text-text flex size-9 items-center justify-center rounded-full border transition-colors"
-        aria-label="Turn interface sounds on or off"
+        aria-label="Interface sounds"
+        aria-pressed={sound === undefined ? undefined : sound === "on"}
       >
         <VolumeX aria-hidden className="sound-on:hidden size-4" />
         <Volume2 aria-hidden className="sound-on:block hidden size-4" />

@@ -47,7 +47,9 @@ export function ExperienceBands() {
               <span className="text-3xl font-semibold tracking-tight sm:text-4xl xl:text-5xl">
                 {item.role}
               </span>
-              <span className="opacity-70">
+              {/* Dimmed only on the full-colour bands: a plain band is
+                  already muted, and dimming that would fail contrast. */}
+              <span className={expandable ? "opacity-70" : undefined}>
                 {item.company} · {item.type}
               </span>
             </span>

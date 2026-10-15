@@ -3,17 +3,30 @@ export type TourStep = {
   target: string;
   /** What the chat bubble says there. */
   text: string;
+  /** Said instead of `text` on touch screens, where there is no keyboard. */
+  touchText?: string;
+  /** "pointer" keeps the bubble right by the pointer instead of clearing the
+      whole target; for big targets like the portrait. */
+  bubbleAt?: "pointer";
 };
 
 /**
  * The guided tour that plays on a visitor's first visit to the home page:
- * a greeting, then the social links in the intro, then the sidebar.
+ * a greeting, how to end the tour, then the social links in the intro, then
+ * the sidebar.
  * Played by src/components/ui/tour/guided-tour.tsx.
  */
 export const tour: TourStep[] = [
   {
     target: "portrait",
+    bubbleAt: "pointer",
     text: "Hey, I'm Derick. Welcome in! Let me show you around real quick.",
+  },
+  {
+    target: "tour-skip",
+    text: "Rather explore on your own? Press Esc or hit Skip anytime. Scrolling or clicking anywhere ends the tour too.",
+    touchText:
+      "Rather explore on your own? Tap Skip anytime, or just start scrolling, and I'll get out of your way.",
   },
   {
     target: "social-github",

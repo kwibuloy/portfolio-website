@@ -56,7 +56,7 @@ export function SidebarActions() {
       <p className="text-text-muted flex items-center gap-3 px-3 py-3 text-sm">
         <Users aria-hidden className="size-4" />
         Visitors
-        <span className="text-text ml-auto font-mono" aria-live="polite">
+        <span className="text-text ml-auto font-mono">
           {count === undefined ? "…" : (count?.toLocaleString("en-US") ?? "—")}
         </span>
       </p>

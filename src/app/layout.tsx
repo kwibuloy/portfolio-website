@@ -6,7 +6,8 @@ import { BackToTop } from "@/components/ui/back-to-top";
 import { Background } from "@/components/ui/background";
 import { InlineScript } from "@/components/ui/inline-script";
 import { Providers } from "@/components/ui/providers";
-import { GuidedTour } from "@/components/ui/tour/guided-tour";
+import { SiteFooter } from "@/components/ui/site-footer";
+import { TourLoader } from "@/components/ui/tour/tour-loader";
 import { site } from "@/content/site";
 import { preferencesScript } from "@/lib/preferences";
 import "./globals.css";
@@ -21,12 +22,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Link previews need absolute URLs. Vercel sets the production domain at
+// build time; locally there is none, so previews point at localhost.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
+// The preview image itself is app/opengraph-image.tsx, which Next adds to
+// every page.
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: `${site.name} | ${site.role}`,
     template: `%s | ${site.name}`,
   },
-  description: `Portfolio of ${site.name}.`,
+  description: site.description,
+  openGraph: {
+    type: "website",
+    siteName: site.name,
+    locale: "en_US",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({
@@ -73,9 +89,10 @@ export default function RootLayout({
             className="lg:pl-sidebar overflow-x-clip outline-none"
           >
             {children}
+            <SiteFooter />
           </div>
           <BackToTop />
-          <GuidedTour />
+          <TourLoader />
         </Providers>
       </body>
     </html>

@@ -47,7 +47,9 @@ function logoTexture(id: string, style: KeyStyle) {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const context = canvas.getContext("2d")!;
-  // Dark logo on light keycaps, white on the rest.
+  // White logos, dark only on the lightest keycaps (the design choice in
+  // docs/features/tech-keyboard.md). Logos are not text, so they do not need
+  // the stricter inkFor rule that the popup's text uses.
   const { r, g, b } = new Color(style.color);
   context.fillStyle =
     0.2126 * r + 0.7152 * g + 0.0722 * b > 0.35 ? "#111111" : "#ffffff";

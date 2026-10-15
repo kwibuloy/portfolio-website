@@ -1,9 +1,9 @@
 "use client";
 
 import { useReducedMotion } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { ContributionDay } from "@/lib/github";
-import { gsap, useGSAP } from "@/lib/gsap";
+import { gsap, useGSAP } from "@/lib/gsap-scroll";
 
 // One shade of the accent colour per GitHub activity level, lightest first.
 const LEVEL_CLASS = [
@@ -25,21 +25,42 @@ const dayFormat = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 const utc = (date: string) => new Date(`${date}T00:00:00Z`);
+const describe = (day: ContributionDay) =>
+  `${day.count} contribution${day.count === 1 ? "" : "s"} on ${dayFormat.format(utc(day.date))}`;
+const IDLE_LABEL = "hover a day";
+
+type Centre = {
+  cell: HTMLElement;
+  x: number;
+  y: number;
+  /** Eases the square's scale toward a new value (gsap.quickTo). */
+  scaleTo: (value: number) => void;
+};
 
 /**
  * The contribution graph: one column per week, one square per day. The
  * squares pop in as a wave the first time the graph scrolls into view, and
  * they swell around the cursor like a ripple. Hovering a square shows its
  * date and count.
+ *
+ * The ripple runs at most once per frame, each square has one reusable
+ * quickTo tween instead of a new tween per pointer move, and the hover label
+ * is written straight to the DOM, so moving across the graph re-renders
+ * nothing.
  */
 export function ContributionGrid({ weeks }: { weeks: ContributionDay[][] }) {
   const root = useRef<HTMLDivElement>(null);
-  // Square centres, measured when the pointer enters, and the squares that
-  // are currently swollen.
-  const centres = useRef<{ cell: HTMLElement; x: number; y: number }[]>([]);
+  const label = useRef<HTMLParagraphElement>(null);
+  // Square centres, measured when the pointer enters (and again if the page
+  // scrolls under the pointer), and the squares that are currently swollen.
+  const centres = useRef<Centre[]>([]);
+  const measuredAt = useRef(0);
   const swollen = useRef(new Set<HTMLElement>());
-  const [hovered, setHovered] = useState<ContributionDay | null>(null);
+  const pointer = useRef({ x: 0, y: 0 });
+  const frame = useRef(0);
   const reducedMotion = useReducedMotion();
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
+  const days = new Map(weeks.flat().map((day) => [day.date, day]));
 
   const { contextSafe } = useGSAP(
     () => {
@@ -58,7 +79,16 @@ export function ContributionGrid({ weeks }: { weeks: ContributionDay[][] }) {
     { scope: root },
   );
 
+  // Created through contextSafe, so GSAP cleans the quickTo tweens up with
+  // the component.
+  const makeScaleTo = contextSafe((cell: HTMLElement) =>
+    gsap.quickTo(cell, "scale", { duration: 0.3, ease: "power2.out" }),
+  );
+
   const measure = () => {
+    const previous = new Map(
+      centres.current.map((centre) => [centre.cell, centre.scaleTo]),
+    );
     centres.current = Array.from(
       root.current?.querySelectorAll<HTMLElement>("[data-day]") ?? [],
       (cell) => {
@@ -67,36 +97,48 @@ export function ContributionGrid({ weeks }: { weeks: ContributionDay[][] }) {
           cell,
           x: box.left + box.width / 2,
           y: box.top + box.height / 2,
+          scaleTo: previous.get(cell) ?? makeScaleTo(cell),
         };
       },
     );
+    measuredAt.current = window.scrollY;
   };
 
-  // Tweens started from event handlers go through contextSafe, so GSAP
-  // cleans them up with the component.
-  const tween = contextSafe((targets: gsap.TweenTarget, vars: gsap.TweenVars) =>
-    gsap.to(targets, vars),
-  );
-
-  const ripple = (x: number, y: number) => {
+  const ripple = () => {
+    frame.current = 0;
+    // The squares moved if the page scrolled under the pointer.
+    if (window.scrollY !== measuredAt.current) measure();
+    const { x, y } = pointer.current;
     for (const centre of centres.current) {
       const distance = Math.hypot(centre.x - x, centre.y - y);
       if (distance < REACH) {
         swollen.current.add(centre.cell);
-        tween(centre.cell, {
-          scale: 1 + SWELL * (1 - distance / REACH),
-          duration: 0.2,
-          overwrite: "auto",
-        });
+        centre.scaleTo(1 + SWELL * (1 - distance / REACH));
       } else if (swollen.current.delete(centre.cell)) {
-        tween(centre.cell, { scale: 1, duration: 0.4, overwrite: "auto" });
+        centre.scaleTo(1);
       }
     }
   };
 
+  const showLabel = (text: string) => {
+    if (label.current && label.current.textContent !== text)
+      label.current.textContent = text;
+  };
+
+  const onMove = (event: React.PointerEvent) => {
+    const day = days.get((event.target as HTMLElement).dataset.day ?? "");
+    if (day) showLabel(describe(day));
+    if (reducedMotion) return;
+    pointer.current = { x: event.clientX, y: event.clientY };
+    frame.current ||= requestAnimationFrame(ripple);
+  };
+
   const settle = () => {
-    setHovered(null);
-    tween([...swollen.current], { scale: 1, duration: 0.4 });
+    cancelAnimationFrame(frame.current);
+    frame.current = 0;
+    showLabel(IDLE_LABEL);
+    for (const centre of centres.current)
+      if (swollen.current.has(centre.cell)) centre.scaleTo(1);
     swollen.current.clear();
   };
 
@@ -110,19 +152,14 @@ export function ContributionGrid({ weeks }: { weeks: ContributionDay[][] }) {
           className="grid grid-rows-7 gap-0.5 sm:gap-1.5"
           style={{ gridTemplateColumns: `repeat(${weeks.length}, 1fr)` }}
           onPointerEnter={reducedMotion ? undefined : measure}
-          onPointerMove={
-            reducedMotion
-              ? undefined
-              : (event) => ripple(event.clientX, event.clientY)
-          }
+          onPointerMove={onMove}
           onPointerLeave={settle}
         >
           {weeks.map((week, weekIndex) =>
             week.map((day) => (
               <span
                 key={day.date}
-                data-day
-                onPointerEnter={() => setHovered(day)}
+                data-day={day.date}
                 // A partial first or last week must still sit on the right
                 // weekday row, so every square is placed explicitly.
                 style={{
@@ -137,10 +174,8 @@ export function ContributionGrid({ weeks }: { weeks: ContributionDay[][] }) {
       </div>
 
       <div className="text-text-subtle flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
-        <p aria-hidden>
-          {hovered
-            ? `${hovered.count} contribution${hovered.count === 1 ? "" : "s"} on ${dayFormat.format(utc(hovered.date))}`
-            : "hover a day"}
+        <p ref={label} aria-hidden>
+          {IDLE_LABEL}
         </p>
         <p aria-hidden className="flex items-center gap-1.5">
           less

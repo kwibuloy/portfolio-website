@@ -2,7 +2,7 @@
 
 import { Check, Send } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CONTACT_LIMITS,
   type ContactErrors,
@@ -14,7 +14,7 @@ import {
 const empty: ContactInput = { name: "", email: "", message: "" };
 
 const fieldClass =
-  "border-border-strong bg-surface placeholder:text-text-subtle aria-invalid:border-text w-full rounded-xl border px-4 py-3 text-sm";
+  "border-input-border bg-surface placeholder:text-text-subtle aria-invalid:border-text w-full rounded-xl border px-4 py-3 text-sm";
 
 type Status = "idle" | "sending" | "sent";
 
@@ -34,6 +34,15 @@ export function ContactPanel({
   const [errors, setErrors] = useState<ContactErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>("idle");
+  // Counts sends that came back with field errors; each one moves focus to
+  // the first invalid field, so its error is read out.
+  const [rejected, setRejected] = useState(0);
+  const form = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (rejected === 0) return;
+    form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [rejected]);
 
   const set = (field: keyof ContactInput) => (value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -46,7 +55,10 @@ export function ContactPanel({
     const found = validateContact(values);
     setErrors(found);
     setFailure(null);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0) {
+      setRejected((count) => count + 1);
+      return;
+    }
 
     setStatus("sending");
     try {
@@ -63,6 +75,7 @@ export function ContactPanel({
       }
       setErrors(result.fieldErrors ?? {});
       setFailure(result.error);
+      if (result.fieldErrors) setRejected((count) => count + 1);
     } catch {
       setFailure(
         "Your message could not be sent. Check your connection and try again.",
@@ -105,6 +118,7 @@ export function ContactPanel({
 
   return (
     <form
+      ref={form}
       noValidate
       onSubmit={submit}
       className="flex flex-col gap-4 overflow-y-auto p-6"

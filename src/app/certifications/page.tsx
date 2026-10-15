@@ -3,8 +3,12 @@ import type { Metadata } from "next";
 import { PageShell } from "@/components/ui/page-shell";
 import { Reveal } from "@/components/ui/reveal";
 import { certifications } from "@/content/certifications";
+import { navItem } from "@/content/site";
 
-export const metadata: Metadata = { title: "Certifications" };
+export const metadata: Metadata = {
+  title: "Certifications",
+  description: navItem("/certifications").blurb,
+};
 
 const labelClass =
   "text-text-subtle font-mono text-xs tracking-widest uppercase";

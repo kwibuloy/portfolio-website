@@ -22,7 +22,7 @@ export function Hero() {
   return (
     <section className="flex flex-col gap-12">
       <div className="grid items-center gap-8 md:grid-cols-5 md:gap-16">
-        <Reveal className="md:col-span-2">
+        <Reveal immediate className="md:col-span-2">
           <FloatingPortrait
             src={site.portrait}
             alt={`Portrait of ${site.name}`}
@@ -31,7 +31,7 @@ export function Hero() {
         </Reveal>
 
         <div className="flex flex-col gap-6 md:col-span-3">
-          <Reveal delay={0.1}>
+          <Reveal immediate delay={0.1}>
             <p className="text-text-subtle font-mono text-sm">{site.role}</p>
             <h1 className="text-gradient mt-2 text-4xl font-semibold tracking-tight sm:text-5xl xl:text-7xl">
               <ScrambleText text={site.name} />
@@ -49,10 +49,10 @@ export function Hero() {
               <span className="opacity-60">PDF</span>
             </a>
           </Reveal>
-          <Reveal delay={0.2}>
+          <Reveal immediate delay={0.2}>
             <p className="text-text-muted text-lg xl:text-xl">{site.intro}</p>
           </Reveal>
-          <Reveal delay={0.3}>
+          <Reveal immediate delay={0.3}>
             <ul className="flex flex-wrap gap-x-5 gap-y-2">
               {socials.map(({ label, href }) => (
                 <li key={label}>
@@ -76,7 +76,7 @@ export function Hero() {
         </div>
       </div>
 
-      <Reveal delay={0.4}>
+      <Reveal immediate delay={0.4}>
         <ul className="border-border divide-border grid border-y sm:grid-cols-3 sm:divide-x">
           {stats.map((stat) => (
             <li key={stat.label}>

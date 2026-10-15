@@ -11,6 +11,20 @@ export const TOUR_START_EVENT = "tour:start";
     drawer, so it can point at the nav on small screens. */
 export const TOUR_DRAWER_EVENT = "tour:drawer";
 
+// The tour's code is loaded on demand (see tour-loader.tsx), so a request can
+// arrive before it exists, or on another page before going home. It is kept
+// here until the tour takes it.
+let requested = false;
+
+/** Asks for the tour to play now (or on the home page, once there). */
 export function startTour() {
+  requested = true;
   window.dispatchEvent(new Event(TOUR_START_EVENT));
+}
+
+/** True once per startTour() call: the tour takes the request and plays. */
+export function takeTourRequest() {
+  const value = requested;
+  requested = false;
+  return value;
 }

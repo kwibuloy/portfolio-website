@@ -90,9 +90,14 @@ export const keyStyles: Record<string, KeyStyle> = {
   },
 };
 
+/** Relative luminance of #111111, the dark ink. */
+const DARK_INK_LUMINANCE = 0.0056;
+
 /**
- * The colour that reads on top of a brand colour: near-black on light
- * colours, white on the rest.
+ * The colour that reads on top of a brand colour: whichever of near-black
+ * and white has the higher WCAG contrast against it. Mid-tones such as
+ * Docker blue or Figma orange get dark ink, which is the only one of the two
+ * that passes 4.5:1 on them.
  */
 export function inkFor(hex: string) {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -101,7 +106,10 @@ export function inkFor(hex: string) {
       ? channel / 12.92
       : ((channel + 0.055) / 1.055) ** 2.4;
   });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.35 ? "#111111" : "#ffffff";
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const onDark = (luminance + 0.05) / (DARK_INK_LUMINANCE + 0.05);
+  const onWhite = 1.05 / (luminance + 0.05);
+  return onDark >= onWhite ? "#111111" : "#ffffff";
 }
 
 /** Used for a technology that has no entry above yet. */

@@ -72,7 +72,14 @@ export function CertificateFan() {
                   onDragEnd={(_, info) => {
                     if (Math.abs(info.offset.x) > 100) show(active + 1);
                   }}
-                  onTap={() => front && setFlipped((value) => !value)}
+                  // Only the front card flips on tap. tabIndex -1 stops
+                  // Motion making the card a tab stop (it does that for any
+                  // element with onTap); the Flip card button is the keyboard
+                  // way to flip it.
+                  onTap={
+                    front ? () => setFlipped((value) => !value) : undefined
+                  }
+                  tabIndex={-1}
                 >
                   <motion.div
                     className="relative size-full cursor-pointer transform-3d"

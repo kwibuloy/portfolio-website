@@ -12,7 +12,7 @@ export function PageShell({
   const { label, blurb } = navItem(href);
   return (
     <main className="max-w-content mx-auto flex w-full flex-col gap-12 px-6 py-12 lg:px-12 lg:py-20">
-      <Reveal>
+      <Reveal immediate>
         <header className="flex flex-col gap-4">
           <h1 className="text-gradient text-4xl font-semibold tracking-tight sm:text-6xl">
             {label}
