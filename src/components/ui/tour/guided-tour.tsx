@@ -17,10 +17,10 @@ import {
 
 /** How long after the home page loads the tour starts, so the hero's own
     entrance plays first. */
-const START_DELAY = 1500;
+const START_DELAY = 1000;
 /** Time per typed character, and the pause to read once a line is typed. */
-const TYPE_MS = 28;
-const READ_MS = 1400;
+const TYPE_MS = 18;
+const READ_MS = 900;
 /** The bubble's width in rem (w-64), the height a long line takes, the gap
     it keeps from the screen's edges and from the target, and the pointer's
     size, all in rem. Used to decide where the bubble fits. */
@@ -30,6 +30,9 @@ const MARGIN_REM = 1;
 const GAP_REM = 0.25;
 // The arrow icon is 1.5rem, nudged up 0.25rem so its tip is on the point.
 const POINTER_REM = 1.25;
+
+/** The tour step that points at the Skip button (data-tour in tour.ts). */
+const SKIP_TARGET = "tour-skip";
 
 /** The pointer, selected inside the tour's GSAP scope. */
 const POINTER = "[data-tour-pointer]";
@@ -64,6 +67,40 @@ function wait(ms: number, signal: AbortSignal) {
       clearTimeout(timer);
       reject(new Stopped());
     });
+  });
+}
+
+/** Waits until the page stops scrolling, however long a smooth scroll takes
+    (from the bottom of the page back up to the portrait is a long way). Ends
+    on `scrollend`, or once no scroll event has come for a moment where that
+    event is missing, and gives up after a few seconds. Throws Stopped as soon
+    as the tour is stopped. */
+function settleScroll(signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal.aborted) return reject(new Stopped());
+    let idle: ReturnType<typeof setTimeout>;
+    const done = () => {
+      clearTimeout(idle);
+      clearTimeout(limit);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scrollend", done);
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    };
+    const onScroll = () => {
+      clearTimeout(idle);
+      idle = setTimeout(done, 150);
+    };
+    const onAbort = () => {
+      done();
+      reject(new Stopped());
+    };
+    const limit = setTimeout(done, 3000);
+    // Also covers a scroll that has not begun yet.
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scrollend", done);
+    signal.addEventListener("abort", onAbort);
   });
 }
 
@@ -188,8 +225,8 @@ function hasSeen() {
  * A cursor with a chat bubble that tours the home page on a visitor's first
  * visit: it greets them at the portrait, points at the Skip button to say how
  * to end the tour, points at each social link in the intro, then walks down
- * the sidebar. It plays through on its own. Skip, Escape, or any scroll,
- * click, tap or key press ends it. "Take the tour" in the sidebar replays it
+ * the sidebar. It plays through on its own. Once it has pointed out Skip,
+ * Skip, Escape, or any scroll, click, tap or key press ends it. "Take the tour" in the sidebar replays it
  * (see tour-loader.tsx, which loads this component).
  *
  * The pointer is moved by GSAP; the bubble inside it pops in and out with
@@ -235,7 +272,7 @@ export function GuidedTour() {
       x - Number(gsap.getProperty(target, "x")),
       y - Number(gsap.getProperty(target, "y")),
     );
-    const duration = gsap.utils.clamp(0.45, 1.1, distance / 900);
+    const duration = gsap.utils.clamp(0.35, 0.8, distance / 1200);
     return new Promise<void>((resolve) => {
       gsap.to(target, { x, duration, ease: "power2.inOut" });
       gsap.to(target, {
@@ -282,6 +319,8 @@ export function GuidedTour() {
 
       try {
         setActive(true);
+        // A replay starts over: no skipping until it points at Skip again.
+        setSkippable(false);
         setTyped("");
         // Enter from the bottom right corner.
         if (pointer.current)
@@ -299,7 +338,15 @@ export function GuidedTour() {
           const inSidebar = target.startsWith("nav-") || target === "ask";
           if (inSidebar && !desktop && !drawerOpen) {
             drawer(true);
-            await wait(450, signal);
+            await wait(350, signal);
+          }
+
+          // The Skip button comes in as the tour points at it, and from
+          // then on the visitor can end the tour. Before that, the greeting
+          // plays out. The button slides in, so wait for it to settle.
+          if (target === SKIP_TARGET) {
+            setSkippable(true);
+            await wait(reducedMotion ? 0 : 300, signal);
           }
 
           const element = findTarget(target);
@@ -312,7 +359,8 @@ export function GuidedTour() {
               block: "center",
               behavior: reducedMotion ? "auto" : "smooth",
             });
-            await wait(reducedMotion ? 0 : 600, signal);
+            // Measure only once the target has stopped moving.
+            await settleScroll(signal);
           }
 
           const { x, y } = pointAt(element);
@@ -325,9 +373,6 @@ export function GuidedTour() {
           await glide(x, y);
           if (signal.aborted) throw new Stopped();
           hover(element);
-          // Skip shows once the tour has something on screen, so it is
-          // never there without a tour to skip.
-          setSkippable(true);
           playTick();
 
           if (reducedMotion) {
@@ -338,7 +383,7 @@ export function GuidedTour() {
               await wait(TYPE_MS, signal);
             }
           }
-          await wait(READ_MS + text.length * 12, signal);
+          await wait(READ_MS + text.length * 8, signal);
         }
       } catch (error) {
         if (!(error instanceof Stopped)) throw error;
@@ -415,8 +460,14 @@ export function GuidedTour() {
     return () => window.removeEventListener(TOUR_START_EVENT, onStart);
   }, [start]);
 
-  // Any scroll, click, tap or key press (Escape included) ends it. Resizing
-  // keeps the pointer on its target while it rests there.
+  // Once Skip is showing, any scroll, click, tap or key press (Escape
+  // included) ends the tour.
+  useEffect(() => {
+    if (!skippable) return;
+    return onVisitorInput(stop);
+  }, [skippable, stop]);
+
+  // Resizing keeps the pointer on its target while it rests there.
   useEffect(() => {
     if (!active) return;
     const follow = () => {
@@ -424,13 +475,9 @@ export function GuidedTour() {
       if (!target || !current.current || gsap.isTweening(target)) return;
       gsap.set(target, pointAt(current.current));
     };
-    const removeListeners = onVisitorInput(stop);
     window.addEventListener("resize", follow);
-    return () => {
-      removeListeners();
-      window.removeEventListener("resize", follow);
-    };
-  }, [active, stop]);
+    return () => window.removeEventListener("resize", follow);
+  }, [active]);
 
   useEffect(() => () => controller.current?.abort(), []);
 
@@ -487,7 +534,7 @@ export function GuidedTour() {
         {skippable && (
           <motion.button
             type="button"
-            data-tour="tour-skip"
+            data-tour={SKIP_TARGET}
             aria-keyshortcuts="Escape"
             onClick={stop}
             initial={{ opacity: 0, y: 16 }}
