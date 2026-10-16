@@ -4,6 +4,27 @@ import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 /**
+ * Scrolls the sheet's own scrolling area (the contact form) so the focused
+ * field shows. Safari's page scroll is suppressed (see SidePanel), so nothing
+ * else brings a field lower in the form into view once the sheet shrinks.
+ */
+function revealFocused(sheet: HTMLElement) {
+  const field = document.activeElement;
+  if (!(field instanceof HTMLElement) || !sheet.contains(field)) return;
+  let scroller = field.parentElement;
+  while (scroller && scroller !== sheet) {
+    if (scroller.scrollHeight > scroller.clientHeight) break;
+    scroller = scroller.parentElement;
+  }
+  if (!scroller || scroller === sheet) return;
+  const box = scroller.getBoundingClientRect();
+  const target = field.getBoundingClientRect();
+  if (target.bottom > box.bottom)
+    scroller.scrollTop += target.bottom - box.bottom;
+  else if (target.top < box.top) scroller.scrollTop -= box.top - target.top;
+}
+
+/**
  * A panel that opens beside the sidebar (or as a bottom sheet on small
  * screens). It is a native <dialog>, which gives focus trapping, Escape to
  * close, and an inert page behind it. The slide-in is the `.panel` CSS in
@@ -65,13 +86,46 @@ export function SidePanel({
         "--sheet-height",
         `${keyboard ? viewport.height : (viewport.height * 5) / 6}px`,
       );
+      if (keyboard) revealFocused(element);
     };
     fit();
     viewport.addEventListener("resize", fit);
     viewport.addEventListener("scroll", fit);
+
+    // When a field gains focus, iOS Safari scrolls the whole page to bring
+    // it above the keyboard, even with the page locked. That shows the page
+    // under the sheet and cancels the lift above. Holding the field far off
+    // screen for the frame it gains focus leaves Safari nothing to scroll
+    // to (the trick React Aria uses), so only fit() moves things.
+    let startY = 0;
+    const onTouchStart = (event: TouchEvent) => {
+      startY = event.touches[0].clientY;
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      const field = event.target;
+      if (
+        !(field instanceof HTMLElement) ||
+        !field.matches("input:not([type=hidden]), textarea") ||
+        field === document.activeElement ||
+        // A drag that ended on a field was a scroll, not a tap.
+        Math.abs(event.changedTouches[0].clientY - startY) > 10
+      )
+        return;
+      event.preventDefault();
+      field.style.transform = "translateY(-2000px)";
+      field.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        field.style.transform = "";
+      });
+    };
+    element.addEventListener("touchstart", onTouchStart, { passive: true });
+    element.addEventListener("touchend", onTouchEnd, { passive: false });
+
     return () => {
       viewport.removeEventListener("resize", fit);
       viewport.removeEventListener("scroll", fit);
+      element.removeEventListener("touchstart", onTouchStart);
+      element.removeEventListener("touchend", onTouchEnd);
     };
   }, [open]);
 
