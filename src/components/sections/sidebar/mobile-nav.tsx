@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { PreferenceToggles } from "@/components/ui/preference-toggles";
 import { site } from "@/content/site";
-import { TOUR_DRAWER_EVENT } from "@/lib/tour";
+import { TOUR_DRAWER_EVENT, TOUR_START_EVENT } from "@/lib/tour";
 
 const iconButtonClass =
   "text-text-muted hover:bg-raised hover:text-text flex size-9 items-center justify-center rounded-full transition-colors";
@@ -29,8 +29,16 @@ export function MobileNav({ children }: { children: React.ReactNode }) {
       if (open && !element.open) element.show();
       if (!open && element.open) element.close();
     };
+    // "Take the tour" pressed inside the open drawer: get out of the way. The
+    // tour opens it again, without the modal backdrop, when it points at the
+    // nav. This listener is added before the tour's, so it runs first.
+    const onStart = () => dialog.current?.close();
     window.addEventListener(TOUR_DRAWER_EVENT, onTour);
-    return () => window.removeEventListener(TOUR_DRAWER_EVENT, onTour);
+    window.addEventListener(TOUR_START_EVENT, onStart);
+    return () => {
+      window.removeEventListener(TOUR_DRAWER_EVENT, onTour);
+      window.removeEventListener(TOUR_START_EVENT, onStart);
+    };
   }, []);
 
   return (

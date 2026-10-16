@@ -209,13 +209,14 @@
   }
 
   /* Phones and tablets only (below lg). Nothing may widen the page past the
-     screen, the page does not bounce past its edges, and it cannot scroll
+     screen, the page does not bounce past its left and right edges (it still
+     bounces vertically, which keeps pull to refresh), and it cannot scroll
      behind an open drawer or panel. The tour opens the drawer without
      showModal(), so :modal leaves the page scrollable then. */
   @media (width < 64rem) {
     html {
       overflow-x: hidden;
-      overscroll-behavior: none;
+      overscroll-behavior-x: none;
     }
     html:has(dialog:modal) {
       overflow: hidden;

@@ -61,7 +61,7 @@ export function AskPanel() {
         role="log"
         aria-live="polite"
         aria-label="Conversation"
-        className="flex min-h-64 flex-1 flex-col gap-3 overflow-y-auto p-6"
+        className="flex min-h-64 flex-1 flex-col gap-3 overflow-y-auto p-6 in-data-keyboard:min-h-0"
       >
         {messages.map((message) => (
           <motion.div
@@ -129,7 +129,9 @@ export function AskPanel() {
       </div>
 
       <div className="border-border flex flex-col gap-3 border-t p-4">
-        <ul className="flex flex-wrap gap-2">
+        {/* Hidden while the phone keyboard is up (side-panel.tsx sets
+            data-keyboard), so the conversation keeps some room. */}
+        <ul className="flex flex-wrap gap-2 in-data-keyboard:hidden">
           {SUGGESTIONS.map((suggestion) => (
             <li key={suggestion}>
               <button
