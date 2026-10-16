@@ -7,7 +7,7 @@ Decided 2026-10-13. Multi-page site with a persistent left sidebar, modelled on 
 - **Top row**: "Derick Conrad D. Mercado" (links to `/`), light/dark toggle, audio toggle. The audio toggle controls UI sound effects only (off by default, no background music).
 - **Nav, in this order**: Education, Experience, Tech Stack, Projects, Certifications, Services. Each is its own route with the full details. Each link has a number and an icon; a solid pill marks the current page and a faint pill slides to the hovered link. A soft light follows the pointer across the sidebar (`sidebar/spotlight.tsx`), and the name scrambles on hover.
 - **Below the nav**: "Ask anything" (opens the chatbot), the unique visitor count, and "Contact Me" (opens the contact form).ts`under its label as a quiet status line with a pulsing dot in the same faint colour. Both open as panels beside the sidebar, or as a bottom sheet on small screens. See the three files in`docs/features/`.
-- Below the `lg` breakpoint the sidebar becomes a top bar with a slide-in drawer (a native `<dialog>`).
+- Below the `lg` breakpoint the sidebar becomes a top bar with a slide-in drawer (a native `<dialog>`). It has no visible close button (2026-10-16): a tap beside it or Escape closes it. On phones the page cannot scroll sideways, does not bounce past its edges, and does not scroll behind an open drawer or panel; form fields are 16px so iOS does not zoom in, and the chat and contact sheet sits above the on-screen keyboard (`side-panel.tsx`).
 
 ## Pages
 

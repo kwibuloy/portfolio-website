@@ -160,7 +160,7 @@ export function AskPanel() {
             maxLength={200}
             autoComplete="off"
             placeholder="Ask about Derick…"
-            className="border-input-border bg-surface placeholder:text-text-subtle min-w-0 flex-1 rounded-full border px-4 py-3 text-sm"
+            className="border-input-border bg-surface placeholder:text-text-subtle min-w-0 flex-1 rounded-full border px-4 py-3 text-base lg:text-sm"
           />
           <button
             type="submit"

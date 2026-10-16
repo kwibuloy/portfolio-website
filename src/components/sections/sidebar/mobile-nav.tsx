@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { PreferenceToggles } from "@/components/ui/preference-toggles";
@@ -45,7 +45,15 @@ export function MobileNav({ children }: { children: React.ReactNode }) {
             type="button"
             className={iconButtonClass}
             aria-label="Open menu"
-            onClick={() => dialog.current?.showModal()}
+            onClick={() => {
+              const element = dialog.current;
+              if (!element) return;
+              element.showModal();
+              // showModal() focuses the first link (the name), and iOS draws
+              // a focus ring around it. Focus the drawer itself instead; Tab
+              // still moves into the links.
+              element.focus();
+            }}
           >
             <Menu aria-hidden className="size-5" />
           </button>
@@ -55,7 +63,8 @@ export function MobileNav({ children }: { children: React.ReactNode }) {
       <dialog
         ref={dialog}
         aria-label="Menu"
-        className="drawer border-border bg-bg text-text w-sidebar fixed inset-y-0 left-0 z-40 m-0 h-dvh max-h-none max-w-full border-r"
+        tabIndex={-1}
+        className="drawer border-border bg-bg text-text w-sidebar fixed inset-y-0 left-0 z-40 m-0 h-dvh max-h-none max-w-full border-r outline-none"
         // Close when a link inside is followed, or when the backdrop (the
         // dialog element itself, outside its content) is clicked.
         onClick={(event) => {
@@ -64,19 +73,16 @@ export function MobileNav({ children }: { children: React.ReactNode }) {
             dialog.current?.close();
         }}
       >
-        <div className="flex h-full flex-col">
-          <div className="min-h-0 flex-1">{children}</div>
-          <div className="border-border flex justify-end border-t p-3">
-            <button
-              type="button"
-              className={iconButtonClass}
-              aria-label="Close menu"
-              onClick={() => dialog.current?.close()}
-            >
-              <X aria-hidden className="size-5" />
-            </button>
-          </div>
-        </div>
+        <div className="h-full">{children}</div>
+        {/* No visible close button: a tap on the page beside the drawer
+            closes it, as does Escape. This one is for screen readers. */}
+        <button
+          type="button"
+          className="sr-only"
+          onClick={() => dialog.current?.close()}
+        >
+          Close menu
+        </button>
       </dialog>
     </>
   );

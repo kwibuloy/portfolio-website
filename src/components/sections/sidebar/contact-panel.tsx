@@ -14,7 +14,7 @@ import {
 const empty: ContactInput = { name: "", email: "", message: "" };
 
 const fieldClass =
-  "border-input-border bg-surface placeholder:text-text-subtle aria-invalid:border-text w-full rounded-xl border px-4 py-3 text-sm";
+  "border-input-border bg-surface placeholder:text-text-subtle aria-invalid:border-text w-full rounded-xl border px-4 py-3 text-base lg:text-sm";
 
 type Status = "idle" | "sending" | "sent";
 

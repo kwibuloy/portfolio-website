@@ -208,6 +208,27 @@
     outline-offset: 2px;
   }
 
+  /* Phones and tablets only (below lg). Nothing may widen the page past the
+     screen, the page does not bounce past its edges, and it cannot scroll
+     behind an open drawer or panel. The tour opens the drawer without
+     showModal(), so :modal leaves the page scrollable then. */
+  @media (width < 64rem) {
+    html {
+      overflow-x: hidden;
+      overscroll-behavior: none;
+    }
+    html:has(dialog:modal) {
+      overflow: hidden;
+    }
+  }
+
+  /* The bottom sheet sits above the on-screen keyboard: side-panel.tsx
+     updates these from the visual viewport while it is open. */
+  dialog.panel {
+    --keyboard-inset: 0px;
+    --sheet-height: 83.333dvh;
+  }
+
   /* Mobile navigation drawer: slides in from the left. @starting-style gives
      the browser a "from" state so a plain CSS transition can animate a
      <dialog> opening, and allow-discrete keeps it rendered while it closes. */

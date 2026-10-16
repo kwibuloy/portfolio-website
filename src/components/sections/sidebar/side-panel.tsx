@@ -33,6 +33,31 @@ export function SidePanel({
     // showModal() focuses the first control, which is the close button.
     // Move focus to the field the visitor is here to use instead.
     element.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+
+    // On phones the keyboard covers the bottom of the layout viewport, where
+    // the sheet is pinned. The visual viewport is the part still visible, so
+    // lift the sheet by the covered height and fit it into what is left. The
+    // lg: classes override both, so desktop never uses them.
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const fit = () => {
+      const covered = window.innerHeight - viewport.height - viewport.offsetTop;
+      element.style.setProperty(
+        "--keyboard-inset",
+        `${Math.max(0, covered)}px`,
+      );
+      element.style.setProperty(
+        "--sheet-height",
+        `${(viewport.height * 5) / 6}px`,
+      );
+    };
+    fit();
+    viewport.addEventListener("resize", fit);
+    viewport.addEventListener("scroll", fit);
+    return () => {
+      viewport.removeEventListener("resize", fit);
+      viewport.removeEventListener("scroll", fit);
+    };
   }, [open]);
 
   return (
@@ -44,7 +69,7 @@ export function SidePanel({
       onClick={(event) => {
         if (event.target === dialog.current) onClose();
       }}
-      className="panel border-border-strong bg-bg text-text mt-auto mr-auto mb-0 ml-0 max-h-5/6 w-full max-w-none flex-col overflow-hidden rounded-t-3xl border shadow-xl backdrop:bg-black/40 backdrop:backdrop-blur-xs open:flex lg:mb-6 lg:ml-78 lg:w-112 lg:rounded-3xl"
+      className="panel border-border-strong bg-bg text-text mt-auto mr-auto mb-(--keyboard-inset) ml-0 max-h-(--sheet-height) w-full max-w-none flex-col overflow-hidden rounded-t-3xl border shadow-xl backdrop:bg-black/40 backdrop:backdrop-blur-xs open:flex lg:mb-6 lg:ml-78 lg:max-h-5/6 lg:w-112 lg:rounded-3xl"
     >
       <header className="border-border flex items-center justify-between gap-4 border-b px-6 py-4">
         <h2 className="font-mono text-sm font-medium">{title}</h2>
