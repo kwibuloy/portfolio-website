@@ -3,11 +3,7 @@
 import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-/**
- * Scrolls the sheet's own scrolling area (the contact form) so the focused
- * field shows. Safari's page scroll is suppressed (see SidePanel), so nothing
- * else brings a field lower in the form into view once the sheet shrinks.
- */
+/** Scrolls the sheet's scrollable area so the focused field is visible. */
 function revealFocused(sheet: HTMLElement) {
   const field = document.activeElement;
   if (!(field instanceof HTMLElement) || !sheet.contains(field)) return;
@@ -51,28 +47,17 @@ export function SidePanel({
       return;
     }
     element.showModal();
-    // showModal() focuses the first control, which is the close button.
-    // With a mouse or keyboard, move focus to the field the visitor is here
-    // to use. On a touch screen that would pop the keyboard up over the
-    // panel before they asked for it, so focus the panel itself instead and
-    // let a tap on a field bring the keyboard up.
+    // Focus the field on desktop. On touch screens focus the panel instead,
+    // so the keyboard waits for a tap.
     if (matchMedia("(pointer: coarse)").matches) element.focus();
     else element.querySelector<HTMLElement>("[data-autofocus]")?.focus();
 
-    // On phones the keyboard covers the bottom of the screen, where the sheet
-    // is pinned. The visual viewport is the part still visible. While the
-    // keyboard is up, the sheet is placed over exactly that part (its top
-    // and height set from it), which iOS keeps in place, so the input sits
-    // on the keyboard and the conversation gets all the room above it.
-    // documentElement.clientHeight is the layout viewport, which keeps its
-    // height when the keyboard opens (iOS shrinks window.innerHeight with it).
-    // None of this runs at the lg breakpoint and up.
+    // Phones: while the keyboard is up, cover exactly the visible area
+    // (the visual viewport). Uses clientHeight because iOS shrinks
+    // innerHeight with the keyboard. data-keyboard hides the chat suggestions.
     const viewport = window.visualViewport;
     if (!viewport) return;
     const fit = () => {
-      // Much less visible than the layout height means the keyboard is up.
-      // data-keyboard lets the panels drop what is not needed while typing
-      // (the chat suggestions).
       const keyboard =
         document.documentElement.clientHeight - viewport.height > 80 &&
         !matchMedia("(min-width: 64rem)").matches;
@@ -99,11 +84,9 @@ export function SidePanel({
     viewport.addEventListener("resize", fit);
     viewport.addEventListener("scroll", fit);
 
-    // When a field gains focus, iOS Safari scrolls the whole page to bring
-    // it above the keyboard, even with the page locked. That shows the page
-    // under the sheet and cancels the lift above. Holding the field far off
-    // screen for the frame it gains focus leaves Safari nothing to scroll
-    // to (the trick React Aria uses), so only fit() moves things.
+    // iOS Safari scrolls the page to a newly focused field, exposing the page
+    // behind the sheet. Moving the field off screen for the frame it gains
+    // focus prevents that (the same trick React Aria uses).
     let startY = 0;
     const onTouchStart = (event: TouchEvent) => {
       startY = event.touches[0].clientY;
@@ -114,7 +97,7 @@ export function SidePanel({
         !(field instanceof HTMLElement) ||
         !field.matches("input:not([type=hidden]), textarea") ||
         field === document.activeElement ||
-        // A drag that ended on a field was a scroll, not a tap.
+        // Ignore drags (scrolls) that end on a field.
         Math.abs(event.changedTouches[0].clientY - startY) > 10
       )
         return;

@@ -3,7 +3,7 @@
 import { Folder, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { Tag } from "@/components/ui/card";
+import { Tag } from "@/components/ui/tag";
 import { type Project, projects } from "@/content/projects";
 
 function ProjectBody({ project }: { project: Project }) {

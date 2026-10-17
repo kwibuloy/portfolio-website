@@ -29,9 +29,7 @@ export function MobileNav({ children }: { children: React.ReactNode }) {
       if (open && !element.open) element.show();
       if (!open && element.open) element.close();
     };
-    // "Take the tour" pressed inside the open drawer: get out of the way. The
-    // tour opens it again, without the modal backdrop, when it points at the
-    // nav. This listener is added before the tour's, so it runs first.
+    // Close when the tour starts; the tour reopens it when it needs the nav.
     const onStart = () => dialog.current?.close();
     window.addEventListener(TOUR_DRAWER_EVENT, onTour);
     window.addEventListener(TOUR_START_EVENT, onStart);
@@ -57,9 +55,7 @@ export function MobileNav({ children }: { children: React.ReactNode }) {
               const element = dialog.current;
               if (!element) return;
               element.showModal();
-              // showModal() focuses the first link (the name), and iOS draws
-              // a focus ring around it. Focus the drawer itself instead; Tab
-              // still moves into the links.
+              // Focus the drawer, not the name link, so iOS shows no ring.
               element.focus();
             }}
           >
@@ -82,8 +78,7 @@ export function MobileNav({ children }: { children: React.ReactNode }) {
         }}
       >
         <div className="h-full">{children}</div>
-        {/* No visible close button: a tap on the page beside the drawer
-            closes it, as does Escape. This one is for screen readers. */}
+        {/* Screen readers only; others tap outside or press Escape. */}
         <button
           type="button"
           className="sr-only"

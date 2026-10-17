@@ -1,6 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
-import { Tag } from "@/components/ui/card";
+import { Tag } from "@/components/ui/tag";
 import { PageShell } from "@/components/ui/page-shell";
 import { Reveal } from "@/components/ui/reveal";
 import { projects } from "@/content/projects";

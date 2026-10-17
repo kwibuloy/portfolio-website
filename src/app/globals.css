@@ -208,11 +208,8 @@
     outline-offset: 2px;
   }
 
-  /* Phones and tablets only (below lg). Nothing may widen the page past the
-     screen, the page does not bounce past its left and right edges (it still
-     bounces vertically, which keeps pull to refresh), and it cannot scroll
-     behind an open drawer or panel. The tour opens the drawer without
-     showModal(), so :modal leaves the page scrollable then. */
+  /* Below lg: no sideways scroll or bounce (vertical bounce stays for pull
+     to refresh), and no page scroll behind a modal drawer or panel. */
   @media (width < 64rem) {
     html {
       overflow-x: hidden;
@@ -223,8 +220,7 @@
     }
   }
 
-  /* The bottom sheet's height on phones: side-panel.tsx updates it from the
-     visual viewport while it is open. */
+  /* Mobile sheet height; side-panel.tsx updates it. */
   dialog.panel {
     --sheet-height: 83.333dvh;
   }

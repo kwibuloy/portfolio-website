@@ -129,8 +129,7 @@ export function AskPanel() {
       </div>
 
       <div className="border-border flex flex-col gap-3 border-t p-4">
-        {/* Hidden while the phone keyboard is up (side-panel.tsx sets
-            data-keyboard), so the conversation keeps some room. */}
+        {/* Hidden while the phone keyboard is up. */}
         <ul className="flex flex-wrap gap-2 in-data-keyboard:hidden">
           {SUGGESTIONS.map((suggestion) => (
             <li key={suggestion}>

@@ -50,7 +50,7 @@ export const tour: TourStep[] = [
   },
   {
     target: "nav-education",
-    text: "Now over here: my academics and the things I've accomplished in school.",
+    text: "Now over here, my academics and the things I've accomplished in school.",
   },
   {
     target: "nav-experience",
