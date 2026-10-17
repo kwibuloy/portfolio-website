@@ -223,10 +223,9 @@
     }
   }
 
-  /* The bottom sheet sits above the on-screen keyboard: side-panel.tsx
-     updates these from the visual viewport while it is open. */
+  /* The bottom sheet's height on phones: side-panel.tsx updates it from the
+     visual viewport while it is open. */
   dialog.panel {
-    --keyboard-inset: 0px;
     --sheet-height: 83.333dvh;
   }
 

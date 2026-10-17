@@ -59,32 +59,39 @@ export function SidePanel({
     if (matchMedia("(pointer: coarse)").matches) element.focus();
     else element.querySelector<HTMLElement>("[data-autofocus]")?.focus();
 
-    // On phones the keyboard covers the bottom of the layout viewport, where
-    // the sheet is pinned. The visual viewport is the part still visible, so
-    // lift the sheet by the covered height and fit it into what is left. The
-    // lg: classes override both, so desktop never uses them.
+    // On phones the keyboard covers the bottom of the screen, where the sheet
+    // is pinned. The visual viewport is the part still visible. While the
+    // keyboard is up, the sheet is placed over exactly that part (its top
+    // and height set from it), which iOS keeps in place, so the input sits
+    // on the keyboard and the conversation gets all the room above it.
     // documentElement.clientHeight is the layout viewport, which keeps its
     // height when the keyboard opens (iOS shrinks window.innerHeight with it).
+    // None of this runs at the lg breakpoint and up.
     const viewport = window.visualViewport;
     if (!viewport) return;
     const fit = () => {
-      const covered =
-        document.documentElement.clientHeight -
-        viewport.height -
-        viewport.offsetTop;
-      // More than a toolbar's height covered means the keyboard is up. The
-      // sheet then takes all the room left, and data-keyboard lets the
-      // panels drop what is not needed while typing (the chat suggestions).
+      // Much less visible than the layout height means the keyboard is up.
+      // data-keyboard lets the panels drop what is not needed while typing
+      // (the chat suggestions).
       const keyboard =
-        covered > 80 && !matchMedia("(min-width: 64rem)").matches;
+        document.documentElement.clientHeight - viewport.height > 80 &&
+        !matchMedia("(min-width: 64rem)").matches;
       element.toggleAttribute("data-keyboard", keyboard);
       element.style.setProperty(
-        "--keyboard-inset",
-        `${Math.max(0, covered)}px`,
-      );
-      element.style.setProperty(
         "--sheet-height",
-        `${keyboard ? viewport.height : (viewport.height * 5) / 6}px`,
+        `${(viewport.height * 5) / 6}px`,
+      );
+      Object.assign(
+        element.style,
+        keyboard
+          ? {
+              top: `${viewport.offsetTop}px`,
+              bottom: "auto",
+              height: `${viewport.height}px`,
+              maxHeight: "none",
+              margin: "0",
+            }
+          : { top: "", bottom: "", height: "", maxHeight: "", margin: "" },
       );
       if (keyboard) revealFocused(element);
     };
@@ -139,7 +146,7 @@ export function SidePanel({
       onClick={(event) => {
         if (event.target === dialog.current) onClose();
       }}
-      className="panel border-border-strong bg-bg text-text mt-auto mr-auto mb-(--keyboard-inset) ml-0 max-h-(--sheet-height) w-full max-w-none flex-col overflow-hidden rounded-t-3xl border shadow-xl outline-none backdrop:bg-black/40 backdrop:backdrop-blur-xs open:flex lg:mb-6 lg:ml-78 lg:max-h-5/6 lg:w-112 lg:rounded-3xl"
+      className="panel border-border-strong bg-bg text-text mt-auto mr-auto mb-0 ml-0 max-h-(--sheet-height) w-full max-w-none flex-col overflow-hidden rounded-t-3xl border shadow-xl outline-none backdrop:bg-black/40 backdrop:backdrop-blur-xs open:flex lg:mb-6 lg:ml-78 lg:max-h-5/6 lg:w-112 lg:rounded-3xl"
     >
       <header className="border-border flex items-center justify-between gap-4 border-b px-6 py-4">
         <h2 className="font-mono text-sm font-medium">{title}</h2>
