@@ -8,7 +8,7 @@ import { certifications } from "@/content/certifications";
 const controlClass =
   "border-border-strong hover:bg-accent hover:text-on-accent flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-sm transition-colors";
 const faceClass =
-  "border-border-strong from-bg to-raised absolute inset-0 flex flex-col gap-4 overflow-hidden rounded-3xl border bg-linear-to-br p-8 shadow-xl backface-hidden";
+  "border-border-strong from-bg to-raised absolute inset-0 isolate flex flex-col gap-4 overflow-hidden rounded-3xl border bg-linear-to-br p-8 shadow-xl backface-hidden";
 
 const issuers = new Set(certifications.map((item) => item.issuer)).size;
 const years = certifications.map((item) => item.date).sort();
@@ -49,7 +49,7 @@ export function CertificateFan() {
 
       <div className="grid items-start gap-12 lg:grid-cols-5">
         <div className="flex flex-col items-center gap-8 lg:col-span-3">
-          <div className="relative aspect-3/2 w-full max-w-2xl perspective-distant">
+          <div className="relative aspect-4/5 w-full max-w-2xl perspective-distant sm:aspect-3/2">
             {certifications.map((item, index) => {
               // 0 is the front card; higher numbers sit further back.
               const depth = (index - active + count) % count;
@@ -89,7 +89,7 @@ export function CertificateFan() {
                     <div className={faceClass}>
                       <Award
                         aria-hidden
-                        className="text-border absolute -right-8 -bottom-8 size-56"
+                        className="text-border absolute -right-4 -bottom-4 -z-10 size-24 lg:-right-8 lg:-bottom-8 lg:size-56"
                       />
                       <p className="text-text-subtle font-mono text-xs tracking-widest uppercase">
                         Certificate · {item.issuer}

@@ -126,6 +126,8 @@ export function ContributionGrid({ weeks }: { weeks: ContributionDay[][] }) {
   };
 
   const onMove = (event: React.PointerEvent) => {
+    // Mouse only; touch does nothing.
+    if (event.pointerType !== "mouse") return;
     const day = days.get((event.target as HTMLElement).dataset.day ?? "");
     if (day) showLabel(describe(day));
     if (reducedMotion) return;
@@ -151,7 +153,11 @@ export function ContributionGrid({ weeks }: { weeks: ContributionDay[][] }) {
           aria-label="Contribution graph for the last 12 months. The monthly totals follow as a list."
           className="grid grid-rows-7 gap-0.5 sm:gap-1.5"
           style={{ gridTemplateColumns: `repeat(${weeks.length}, 1fr)` }}
-          onPointerEnter={reducedMotion ? undefined : measure}
+          onPointerEnter={
+            reducedMotion
+              ? undefined
+              : (event) => event.pointerType === "mouse" && measure()
+          }
           onPointerMove={onMove}
           onPointerLeave={settle}
         >
@@ -174,7 +180,7 @@ export function ContributionGrid({ weeks }: { weeks: ContributionDay[][] }) {
       </div>
 
       <div className="text-text-subtle flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
-        <p ref={label} aria-hidden>
+        <p ref={label} aria-hidden className="pointer-coarse:invisible">
           {IDLE_LABEL}
         </p>
         <p aria-hidden className="flex items-center gap-1.5">
